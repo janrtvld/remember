@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "kind": "controlled scenarios derived from reviewed failure categories; no historical replay claim",
+  "cases": [
+    {
+      "id": "background-handoff",
+      "kind": "controlled",
+      "startedAt": 1793264400000,
+      "endedAt": 1793267400000,
+      "activeDurationMs": 3000000,
+      "evidence": [
+        {
+          "evidenceId": "background-handoff",
+          "timestamp": 1793267400000,
+          "kind": "screen-context",
+          "app": "Fixture",
+          "window": "Observed sequence",
+          "text": "29 October. Local times: 10:00\u201310:05 Jan briefs an agent to update dependencies for Beacon News. 10:05\u201310:45 Jan actively edits his job application in Notes; the Beacon agent runs unattended in the background. 10:45\u201310:50 Jan reviews its diff. No merge, publication or deployment occurred. The actual human involvement in Beacon is the five-minute briefing and five-minute review; application writing occupies the intervening forty minutes."
+        }
+      ],
+      "checks": {
+        "attention": [
+          {
+            "project": "Beacon",
+            "min": 5,
+            "max": 15
+          },
+          {
+            "project": "application|career",
+            "min": 35,
+            "max": 45
+          }
+        ],
+        "forbidden": "^(Merged|Published|Deployed)|(?:was|were) (?:merged|published|deployed)"
+      },
+      "previous": null
+    },
+    {
+      "id": "passive-file",
+      "kind": "controlled",
+      "startedAt": 1793264400000,
+      "endedAt": 1793266200000,
+      "activeDurationMs": 1800000,
+      "evidence": [
+        {
+          "evidenceId": "passive-file",
+          "timestamp": 1793266200000,
+          "kind": "screen-context",
+          "app": "Fixture",
+          "window": "Observed sequence",
+          "text": "29 October. An editor with a tooling settings file was open 10:00\u201310:30. Jan explicitly says at 10:30: I left this file open while I was away; I did not read or change anything. There are no edits, decisions or meaningful outcomes."
+        }
+      ],
+      "checks": {
+        "attentionTotalMax": 0,
+        "outcomesMax": 0
+      },
+      "previous": null
+    },
+    {
+      "id": "reading-not-idle",
+      "kind": "controlled",
+      "startedAt": 1793264400000,
+      "endedAt": 1793266200000,
+      "activeDurationMs": 1800000,
+      "evidence": [
+        {
+          "evidenceId": "reading-not-idle",
+          "timestamp": 1793266200000,
+          "kind": "screen-context",
+          "app": "Fixture",
+          "window": "Observed sequence",
+          "text": "29 October, 10:00\u201310:30: Jan reads a research paper for the Atlas product; the page remains mostly unchanged. At 10:30 he writes his own notes comparing two approaches from that paper, explicitly saying he spent the last half hour reading and thinking. The notes explore alternatives; no implementation or settled choice exists."
+        }
+      ],
+      "checks": {
+        "attention": [
+          {
+            "project": "Atlas",
+            "min": 25,
+            "max": 35
+          }
+        ],
+        "outcomeRequired": "Atlas|research|approach",
+        "forbidden": "implemented|shipped|selected|decided"
+      },
+      "previous": null
+    },
+    {
+      "id": "separate-workstream",
+      "kind": "controlled",
+      "startedAt": 1793264400000,
+      "endedAt": 1793268000000,
+      "activeDurationMs": 3600000,
+      "evidence": [
+        {
+          "evidenceId": "separate-workstream",
+          "timestamp": 1793268000000,
+          "kind": "screen-context",
+          "app": "Fixture",
+          "window": "Observed sequence",
+          "text": "29 October. 10:00\u201310:40 Jan actively designs reusable mobile UI testing infrastructure, using the Atlas app solely as a test subject; no Atlas feature work occurs. 10:40\u201311:00 Jan fixes Atlas unread badges and verifies by opening a conversation that its badge disappears. These are separate workstreams. His UI testing research is still in progress."
+        }
+      ],
+      "checks": {
+        "attention": [
+          {
+            "project": "test",
+            "min": 35,
+            "max": 45
+          },
+          {
+            "project": "Atlas",
+            "min": 15,
+            "max": 25
+          }
+        ],
+        "outcomeRequired": "badge",
+        "forbidden": "finished.*infrastructure|completed.*infrastructure"
+      },
+      "previous": null
+    },
+    {
+      "id": "event-date-and-negation",
+      "kind": "controlled",
+      "startedAt": 1793264400000,
+      "endedAt": 1793265000000,
+      "activeDurationMs": 600000,
+      "evidence": [
+        {
+          "evidenceId": "event-date-and-negation",
+          "timestamp": 1793265000000,
+          "kind": "screen-context",
+          "app": "Fixture",
+          "window": "Observed sequence",
+          "text": "29 October 10:00, a sent application confirmation dated 27 October at 12:00 is reopened. It confirms the Orbit job application was submitted on the 27th. No application was sent today. 10:05 Jan says: I am unsure about the five-day onsite role at Foundry. I have not declined it; I am leaving it undecided. Today he only reread these messages."
+        }
+      ],
+      "checks": {
+        "outcomesMax": 0,
+        "forbidden": "submitted|declined|rejected"
+      },
+      "previous": null
+    },
+    {
+      "id": "purpose-over-mechanics",
+      "kind": "controlled",
+      "startedAt": 1793264400000,
+      "endedAt": 1793266200000,
+      "activeDurationMs": 1800000,
+      "evidence": [
+        {
+          "evidenceId": "purpose-over-mechanics",
+          "timestamp": 1793266200000,
+          "kind": "screen-context",
+          "app": "Fixture",
+          "window": "Observed sequence",
+          "text": "29 October. Jan updates his LinkedIn profile photograph; the website confirms the new photograph is saved. The selected file was IMG_8123.JPG. Separately Jan edits and saves his r\u00e9sum\u00e9 in a PDF editor; the application attachment area remains empty, and nothing is submitted. These are meaningful profile improvements. He also books a routine haircut; he gives it no special significance."
+        }
+      ],
+      "checks": {
+        "outcomeRequired": "LinkedIn|profile",
+        "forbidden": "IMG_|8123|attach|submitt|haircut",
+        "outcomesMin": 1
+      },
+      "previous": null
+    },
+    {
+      "id": "concrete-progress",
+      "kind": "controlled",
+      "startedAt": 1793264400000,
+      "endedAt": 1793268000000,
+      "activeDurationMs": 3600000,
+      "evidence": [
+        {
+          "evidenceId": "concrete-progress",
+          "timestamp": 1793268000000,
+          "kind": "screen-context",
+          "app": "Fixture",
+          "window": "Observed sequence",
+          "text": "29 October. Jan spends 45 minutes implementing daily Wiki updates from Apple Notes; he chooses direct export as one step. The integration is still under development, with no successful run yet. He also builds custom evaluations for improving Remember task interpretation. A labeled dataset is saved, but the model comparison has not run. Both are substantial progress, not completed features."
+        }
+      ],
+      "checks": {
+        "outcomeRequired": "(Wiki.*Notes|Notes.*Wiki)",
+        "outcomesMin": 1,
+        "forbidden": "shipped|deployed|verified|completed.*integration|authorized|selected direct",
+        "outcomesMax": 2
+      },
+      "previous": null
+    },
+    {
+      "id": "positive-delivery",
+      "kind": "controlled",
+      "startedAt": 1793264400000,
+      "endedAt": 1793265300000,
+      "activeDurationMs": 900000,
+      "evidence": [
+        {
+          "evidenceId": "positive-delivery",
+          "timestamp": 1793265300000,
+          "kind": "screen-context",
+          "app": "Fixture",
+          "window": "Observed sequence",
+          "text": "29 October 10:00: the Atlas release page shows version 2.3 published today. A sent message from Jan to Sam contains the release link and says version 2.3 is ready. At 10:10 the city council email is visible in Sent, timestamped today, asking how much floor area is permitted at River Road 12. These are confirmed actions today, not drafts or assistant claims."
+        }
+      ],
+      "checks": {
+        "outcomeRequired": "Atlas.*2.3",
+        "outcomesMin": 2,
+        "forbidden": "synchronized|branch|planning inquiry"
+      },
+      "previous": null
+    }
+  ]
+}

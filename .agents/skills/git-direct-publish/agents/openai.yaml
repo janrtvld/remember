@@ -1,0 +1,4 @@
+interface:
+  display_name: "Direct Git Publishing"
+  short_description: "Commit and push through Git directly"
+  default_prompt: "Use $git-direct-publish to commit and push the current repository changes."

@@ -1,0 +1,50 @@
+{
+  "name": "@remember/desktop",
+  "productName": "Remember",
+  "version": "1.0.0",
+  "description": "Local-first AI memory for your workday.",
+  "author": "Remember",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "native:build": "bash native/build.sh",
+    "dev": "pnpm native:build && wait-on http://localhost:3000 && node scripts/run-electron-vite-dev.mjs",
+    "build": "pnpm native:build && electron-vite build --ignoreConfigWarning && node scripts/verify-main-bundle.cjs",
+    "package": "bash scripts/release.sh --prepare",
+    "package:adhoc": "pnpm --filter @remember/web build && pnpm build && node scripts/release-source-maps.cjs && electron-builder --mac --arm64 --publish never --config electron-builder.yml --config.forceCodeSigning=false --config.mac.identity=-",
+    "release": "bash scripts/release.sh --publish",
+    "types:check": "tsc --noEmit",
+    "test": "tsx --test \"src/**/__tests__/*.test.ts\" \"src/**/*.test.ts\" \"scripts/__tests__/*.test.cjs\"",
+    "postinstall": "install-electron"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.317",
+    "@anthropic-ai/claude-agent-sdk-darwin-arm64": "0.3.317",
+    "@openai/codex-darwin-arm64": "npm:@openai/codex@0.166.0-darwin-arm64",
+    "@openai/codex-sdk": "0.166.0",
+    "@remember/shared": "workspace:*",
+    "@sentry/electron": "8.3.0",
+    "cuelume": "0.2.8",
+    "electron-updater": "^6.8.11",
+    "node-diff3": "3.2.1",
+    "sherpa-onnx-darwin-arm64": "^2.0.1",
+    "sherpa-onnx-node": "^2.0.1",
+    "ws": "^8.22.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@sentry/cli": "3.8.2",
+    "@types/node": "^26.6.6",
+    "@types/ws": "^8.18.2",
+    "electron": "45.2.1",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "playwright-core": "1.64.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "wait-on": "^9.5.1"
+  }
+}

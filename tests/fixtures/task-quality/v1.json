@@ -1,0 +1,214 @@
+{
+  "version": 1,
+  "kind": "controlled scenarios derived from feedback, not historical replay; names and identifiers are fictionalized",
+  "split": "development",
+  "cases": [
+    {
+      "id": "application-outcome",
+      "feedback": ["T21", "T23", "user-grouping-correction"],
+      "text": "Personal note written by Alex: I have decided to apply to The Fellowship. Finish my application this week. Still needed: record my one-minute intro, finish the answer about how I met the founder, and ask the two references for permission. I stopped for today; none of these remaining steps is underway.",
+      "existing": null,
+      "expected": {
+        "count": 1,
+        "title": "(?i)(fellowship.*application|application.*fellowship|apply.*fellowship)",
+        "description": "(?is)(?=.*(video|intro))(?=.*(answer|founder))(?=.*reference)",
+        "id": null
+      }
+    },
+    {
+      "id": "application-update",
+      "feedback": ["T21", "T23", "T31-grouping-candidate"],
+      "text": "Alex's sent message to his coach: My Fellowship application also needs two approved references. I still need to ask both of them. The introduction video is still outstanding. Keep those together as my application.",
+      "existing": {
+        "id": "application-1",
+        "title": "Record Fellowship intro",
+        "description": "Record an introduction video for my Fellowship application."
+      },
+      "expected": {
+        "count": 1,
+        "title": "(?i)(fellowship.*application|application.*fellowship|apply.*fellowship)",
+        "description": "(?is)(?=.*reference)(?=.*(intro|video))",
+        "id": "application-1"
+      }
+    },
+    {
+      "id": "separate-outcomes",
+      "feedback": ["T06", "T20"],
+      "text": "Alex's saved plan: Complete my AgentWorks job application this week; the practical fields and final answers are still pending. Separately, I promised my ClientCo colleague I would test AgentWorks on a representative ClientCo agent flow and send him the findings. Neither is started. These have different deliverables.",
+      "existing": null,
+      "expected": {
+        "count": 2,
+        "title": "(?is)(?=.*(application|apply))(?=.*(test|benchmark|evaluat))",
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "optional-checklist",
+      "feedback": ["T10", "T11", "T12"],
+      "text": "Apple Notes, Weekly review template. Optional prompts, not this week's commitments: fill next week's calendar; plan meals and exercise; clean up Quick Notes. These are recurring suggestions to consider. No entries selected or checked.",
+      "existing": null,
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "agent-permission",
+      "feedback": ["T02", "T07", "T13"],
+      "text": "Codex chat, currently running a test Alex requested. Assistant: Which account should I use for this test? Sign in to Claude to continue. User: Use my personal account. Assistant: Continuing the test now. Stop button visible.",
+      "existing": null,
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "active-agent",
+      "feedback": ["T19"],
+      "text": "Codex chat. Alex: Run the phone lab recovery test now. Assistant: I am halfway through the recovery test. Restart verification remains untested; I will run that next. Agent status: running. No outstanding request to Alex.",
+      "existing": null,
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "ci-observation-gap",
+      "feedback": ["T16"],
+      "text": "Merge request: AI badge. Implementation approved. Auto-merge enabled. CI is running automatically. No failing checks and no review request for Alex. No later CI result was captured.",
+      "existing": null,
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "external-backlog",
+      "feedback": ["T14", "T26", "T27"],
+      "text": "Jira assigned to Alex: Fix linked project opening. GitLab review requests for Alex: MR !668, MR !834. All were assigned two minutes ago. Alex briefly opens the list. No discussion, commitment, overdue deadline, or evidence of neglect is visible.",
+      "existing": null,
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "incidental-agent-step",
+      "feedback": ["T18", "T25"],
+      "text": "Codex active CV editing session. Assistant: I will confirm the chronology, then adjust the date and run the PDF checks. Alex: Yes, continue. Assistant is editing the CV now. Confirm chronology is an internal step in this ongoing run.",
+      "existing": null,
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "small-useful-followup",
+      "feedback": ["T15"],
+      "text": "Alex's sent message to Tom: I'll ask Morgan tomorrow why invoice INV-1042 remains unpaid. I have not contacted him about it yet.",
+      "existing": null,
+      "expected": {
+        "count": 1,
+        "title": "(?i)(morgan|invoice|payment)",
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "municipality-send",
+      "feedback": ["T28"],
+      "text": "Alex's saved note: The municipal inquiry draft is finished. I still need to apply the final simplifications and send it to the municipality tomorrow. Nothing has been sent.",
+      "existing": null,
+      "expected": {
+        "count": 1,
+        "title": "(?i)(municip|inquiry|council)",
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "dating-profiles",
+      "feedback": ["T01"],
+      "text": "Alex's personal note: Tomorrow I want to update my Bumble and Breeze profiles, including the photos and bios. Both profiles still need the update.",
+      "existing": null,
+      "expected": {
+        "count": 1,
+        "title": "(?i)(profile|dating)",
+        "description": "(?is)(?=.*bumble)(?=.*breeze)",
+        "id": null
+      }
+    },
+    {
+      "id": "travel-decision",
+      "feedback": ["T09"],
+      "text": "Alex's personal note: I need to decide this weekend whether the November China trip fits between my roles. I haven't made that decision yet.",
+      "existing": null,
+      "expected": {
+        "count": 1,
+        "title": "(?i)(china|trip)",
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "quoted-third-party",
+      "feedback": ["reported-screen-context-failure"],
+      "text": "Browser article. Example email: \"I will submit the application tomorrow and ask my references.\" Author: Guest writer. Alex is reading the article. This is quoted sample text, not Alex's own commitment.",
+      "existing": null,
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "closed-outcome",
+      "feedback": ["identity-regression"],
+      "text": "Alex's old sent message from last week: I will complete my application to The Fellowship. This old message was reopened today; no new application or commitment is present.",
+      "existing": {
+        "id": "closed-application",
+        "title": "Application for The Fellowship",
+        "description": "Complete The Fellowship application.",
+        "lifecycle": "completed"
+      },
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "user-title-protection",
+      "feedback": ["identity-regression"],
+      "text": "Alex's sent message: For my Fellowship application I still need to record the intro and ask the references. Neither step is done. Keep these under my application.",
+      "existing": {
+        "id": "edited-application",
+        "title": "My next chapter",
+        "description": "Complete The Fellowship application.",
+        "userEditedTitle": true
+      },
+      "expected": {
+        "count": 1,
+        "title": "^My next chapter$",
+        "description": "(?is)(?=.*(intro|video))(?=.*reference)",
+        "id": "edited-application"
+      }
+    }
+  ],
+  "userName": "Alex"
+}

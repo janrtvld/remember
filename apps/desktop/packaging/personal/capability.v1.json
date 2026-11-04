@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "edition": "personal",
+  "capabilities": ["proactive-conversation-v1", "explicit-mini-command-v1", "bounded-briefing-v1"]
+}

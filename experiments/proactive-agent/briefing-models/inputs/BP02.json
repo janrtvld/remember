@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "language": "en",
+  "clock": {
+    "utc": "2026-10-23T13:50:00.000Z",
+    "local": "23 October 2026 15:50:00 CEST",
+    "timeZone": "Europe/Amsterdam"
+  },
+  "projectLabel": "Cedar",
+  "trigger": {
+    "sourceId": "bp02:context",
+    "observedAt": "2026-10-23T13:49:35.000Z",
+    "acceptedAt": "2026-10-23T13:50:00.000Z",
+    "ageMs": 25000,
+    "freshness": "fresh"
+  },
+  "sources": [
+    {
+      "sourceId": "bp02:context",
+      "revision": "d7ee11fffd87d7379bcbd4225f736a1b4846ca2a334e3e9f83f49e6fed05f865",
+      "kind": "context",
+      "current": true,
+      "observedAt": "2026-10-23T13:49:35.000Z",
+      "acceptedAt": "2026-10-23T13:50:00.000Z",
+      "provenance": {
+        "origin": "synthetic-accessibility",
+        "speaker": "unknown",
+        "mediaPlayback": "unknown",
+        "causedByActionId": null
+      },
+      "text": "Cedar packaging review — preparation notes.\nThe reusable-crate trial reports 5% damaged parcels.\nThe supplier quote adds £1.10 per order compared with the current cardboard packaging.\nThe review will consider a wider rollout; no decision has been recorded."
+    },
+    {
+      "sourceId": "bp02:personal",
+      "revision": "4e59e36508f0a2bfb12ec858bf6cf7d1d1121176bdaeb395df8569d8063965b7",
+      "kind": "personal-page",
+      "current": true,
+      "observedAt": "2026-10-21T09:00:00.000Z",
+      "acceptedAt": "2026-10-23T13:50:00.000Z",
+      "provenance": {
+        "origin": "synthetic-personal-page",
+        "speaker": "unknown",
+        "mediaPlayback": "unknown",
+        "causedByActionId": null
+      },
+      "text": "Cedar — current acceptance criteria.\nBefore a wider rollout, damaged parcels must be at most 3% and added packaging cost must be no more than £0.80 per order.\nThere is no measured return-rate comparison between reusable crates and cardboard yet.\nLeon can retrieve the return-rate comparison; he has not provided it.\nDamage rate and customer return rate are different measures.\nA previous draft said \"crates are approved\", but that draft was withdrawn. No rollout is approved."
+    }
+  ],
+  "candidate": {
+    "kind": "private-briefing",
+    "sourceIds": [
+      "bp02:context"
+    ]
+  }
+}

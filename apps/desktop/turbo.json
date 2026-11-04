@@ -1,0 +1,20 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": ["REMEMBER_*"],
+      "outputs": [
+        "native/app-icon",
+        "native/app-list",
+        "native/context-capture/target/release/remember-context-capture",
+        "native/media-playback",
+        "native/microphone-audio-capture",
+        "native/music-classifier",
+        "native/remember",
+        "native/system-audio-capture",
+        "native/system-settings-window",
+        "out/**"
+      ]
+    }
+  }
+}

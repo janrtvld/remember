@@ -1,0 +1,234 @@
+.safety-landing .safety-square {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+.safety-landing .safety-copy {
+  width: 66.6667%;
+  margin-top: 24px;
+  padding: 28px 24px 12px;
+}
+.safety-experience {
+  position: relative;
+  width: 100%;
+  isolation: isolate;
+  padding-bottom: 25px;
+}
+.safety-stage {
+  position: relative;
+  height: 490px;
+  width: 100%;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+}
+.safety-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+  opacity: 0;
+  transition: opacity 400ms ease-out;
+}
+.safety-stage[data-ready="true"] canvas {
+  opacity: 1;
+}
+.safety-stage[data-dragging="true"] {
+  cursor: grabbing;
+}
+.safety-stage[data-hovered="true"] {
+  cursor: pointer;
+}
+.safety-stage-label {
+  position: absolute;
+  left: 30px;
+  top: 24px;
+  color: #758198;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.safety-stage-label > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4976ef;
+}
+.safety-playback {
+  position: absolute;
+  right: 22px;
+  top: 7px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.safety-example {
+  color: #69788f;
+  font-size: 10px;
+}
+.safety-playback button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 18px;
+}
+.safety-context {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  text-align: center;
+  min-height: 58px;
+  padding: 0 24px;
+}
+.safety-context strong {
+  font-size: 14px;
+  font-weight: 500;
+  color: #344258;
+}
+.safety-context span {
+  font-size: 12px;
+  color: #64748b;
+}
+.safety-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding: 4px 20px 0;
+}
+.safety-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 13px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #60708a;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease-out,
+    color 140ms ease-out,
+    transform 140ms ease-out;
+}
+.safety-controls .safety-add {
+  background: #f1f5fd;
+  color: #4269bc;
+  border-color: #e5ebf7;
+}
+.safety-controls button[aria-pressed="true"] {
+  color: #295fd4;
+  background: #edf3ff;
+}
+.safety-controls button:active,
+.safety-playback button:active {
+  transform: scale(0.96);
+}
+.safety-controls button:disabled,
+.safety-playback button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.safety-controls button:focus-visible,
+.safety-playback button:focus-visible {
+  outline: 2px solid #68758a;
+  outline-offset: 3px;
+}
+.safety-control-divider {
+  width: 1px;
+  height: 17px;
+  background: #e1e6ef;
+}
+.safety-instruction {
+  margin: 14px 20px 0;
+  text-align: center;
+  font-size: 10px;
+  color: #69788f;
+}
+.safety-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  color: #6d7d95;
+}
+@media (hover: hover) and (pointer: fine) {
+  .safety-controls button:hover,
+  .safety-playback button:hover {
+    background: #eaf0fa;
+    color: #2c5dbe;
+  }
+}
+@media (max-width: 800px) {
+  .safety-landing .safety-copy {
+    width: 100%;
+    padding: 44px 24px 8px;
+    margin-top: 0;
+  }
+  .safety-stage {
+    height: 400px;
+  }
+  .safety-stage-label {
+    left: 20px;
+    top: 20px;
+  }
+  .safety-example {
+    display: none;
+  }
+}
+@media (max-width: 500px) {
+  .safety-stage {
+    height: 340px;
+  }
+  .safety-playback {
+    right: 8px;
+    top: 0;
+  }
+  .safety-stage-label {
+    left: 18px;
+    top: 17px;
+    font-size: 10px;
+  }
+  .safety-controls {
+    gap: 3px;
+  }
+  .safety-controls button {
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .safety-context {
+    min-height: 64px;
+  }
+  .safety-context strong {
+    font-size: 13px;
+  }
+  .safety-instruction {
+    max-width: 270px;
+    margin: 10px auto 0;
+    line-height: 1.6;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .safety-stage canvas,
+  .safety-controls button,
+  .safety-playback button {
+    transition: none;
+  }
+}

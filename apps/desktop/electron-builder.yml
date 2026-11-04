@@ -1,0 +1,110 @@
+appId: computer.remember.app
+productName: Remember
+protocols:
+  - name: Remember Wiki
+    role: Viewer
+    schemes:
+      - remember
+forceCodeSigning: true
+artifactName: Remember-${arch}.${ext}
+publish:
+  provider: github
+  owner: janrtvld
+  repo: remember
+  channel: latest
+  releaseType: draft
+directories:
+  output: release
+  buildResources: packaging
+files:
+  - out/**
+  - resources/**
+  - "!out/renderer/**"
+  - package.json
+  - "!node_modules/**"
+  - "!**/*.map"
+  - "!**/private-agent/**"
+  - "!**/personal/**"
+afterPack: ./scripts/verify-public-package.cjs
+asar: true
+extraResources:
+  - from: node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex
+    to: codex
+  - from: node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex-code-mode-host
+    to: codex-code-mode-host
+  - from: node_modules/@anthropic-ai/claude-agent-sdk-darwin-arm64/claude
+    to: claude
+  - from: ../../THIRD_PARTY_NOTICES.md
+    to: licenses/THIRD_PARTY_NOTICES.md
+  - from: resources/licenses/codex-APACHE-2.0.txt
+    to: licenses/codex-APACHE-2.0.txt
+  - from: resources/licenses/claude-agent-sdk.txt
+    to: licenses/claude-agent-sdk.txt
+  - from: node_modules/electron/LICENSE
+    to: licenses/electron-LICENSE.txt
+  - from: node_modules/electron/dist/LICENSES.chromium.html
+    to: licenses/LICENSES.chromium.html
+  - from: ../web/out
+    to: web
+  - from: native/music-classifier
+    to: music-classifier
+  - from: native/media-playback
+    to: media-playback
+  - from: native/app-icon
+    to: app-icon
+  - from: native/app-list
+    to: app-list
+  - from: native/system-settings-window
+    to: system-settings-window
+  - from: native/context-capture/target/release/remember-context-capture
+    to: context-capture
+  - from: native/system-audio-capture
+    to: system-audio-capture
+  - from: native/microphone-audio-capture
+    to: microphone-audio-capture
+  - from: native/key-paste
+    to: key-paste
+  - from: native/output-volume-control
+    to: output-volume-control
+  - from: native/remember
+    to: remember
+  - from: resources/remember-skill
+    to: remember-skill
+  - from: resources/memorize-skill/SKILL.md
+    to: memorize-skill/SKILL.md
+  - from: node_modules/sherpa-onnx-node
+    to: sherpa/node_modules/sherpa-onnx-node
+  - from: node_modules/sherpa-onnx-darwin-arm64
+    to: sherpa/node_modules/sherpa-onnx-darwin-arm64
+mac:
+  category: public.app-category.productivity
+  icon: packaging/icon.icns
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  notarize: true
+  # Electron 42 contains binary-looking resource files that @electron/osx-sign
+  # incorrectly signs as code. Use the narrow local signer so nested Mach-O
+  # code is signed inside-out while framework resources stay untouched.
+  sign: ./scripts/sign.cjs
+  entitlements: packaging/entitlements.mac.plist
+  entitlementsInherit: packaging/entitlements.mac.plist
+  extendInfo:
+    NSMicrophoneUsageDescription: Remember neemt gesprekken en dictaten lokaal op.
+    NSAudioCaptureUsageDescription: Remember legt systeemaudio lokaal vast voor je dagoverzicht.
+dmg:
+  title: Remember
+  contents:
+    - x: 410
+      y: 175
+      type: link
+      path: /Applications
+    - x: 130
+      y: 175
+      type: file

@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "kind": "Additional controlled validation cases written after initial policy; not an independently authored blind holdout; names and identifiers are fictionalized",
+  "cases": [
+    {
+      "id": "conference-trip",
+      "text": "Alex's sent message: I committed to attend the Lisbon conference. I will finish arranging the trip this weekend: book the flight, reserve the hotel, buy the conference ticket, arrange transport from the airport, and send my dietary needs to the organizer. I haven't started those arrangements.",
+      "existing": null,
+      "expected": {
+        "count": 1,
+        "title": "(?i)(lisbon|conference|trip)",
+        "description": "(?is)(?=.*flight)(?=.*hotel)(?=.*ticket)(?=.*(transport|airport))(?=.*diet)",
+        "id": null
+      }
+    },
+    {
+      "id": "routine-adopted",
+      "text": "Alex's sent message to his coach: I am committing to make next week's meal plan on Sunday and send it to you. This is my specific promise for this week.",
+      "existing": null,
+      "expected": {
+        "count": 1,
+        "title": "(?i)(meal|plan)",
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "template-unadopted",
+      "text": "Notes. Weekly Review Template. Reflection: What went well? What could improve? Checklist: Fill calendar for next week. Make meal plan. Clear Quick Notes. Last edited six months ago. Alex opens this reusable template.",
+      "existing": null,
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "ci-needs-person",
+      "text": "Build service message addressed to Alex: The release CI has failed because your signing certificate expired. Only you can renew it. Alex's sent reply: I will renew the certificate tomorrow; the release is waiting for me. No one is handling the renewal.",
+      "existing": null,
+      "expected": {
+        "count": 1,
+        "title": "(?i)(certificate|signing)",
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "partial-application-progress",
+      "text": "Alex's sent message: I recorded the intro video for my Northstar application. I still need the two references to agree and need to submit the application afterward. I will ask them tomorrow.",
+      "existing": {
+        "id": "northstar",
+        "title": "Complete Northstar application",
+        "description": "Record the video, obtain reference permission, and submit the application."
+      },
+      "expected": {
+        "count": 1,
+        "title": "(?i)(northstar|application)",
+        "description": "(?is)(?=.*reference)(?=.*submit)",
+        "id": "northstar"
+      }
+    },
+    {
+      "id": "third-party-assignment",
+      "text": "Team chat. Priya: I will send the budget proposal tomorrow. Omar: Great, I will review it on Friday. Alex is reading the conversation, but neither message is addressed to Alex.",
+      "existing": null,
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "same-company-distinct",
+      "text": "Alex's saved commitments: Apply for the engineering position at Aurora by Friday. Separately, send Aurora the overdue invoice for my freelance project tomorrow. Both are still outstanding.",
+      "existing": null,
+      "expected": {
+        "count": 2,
+        "title": "(?is)(?=.*(apply|application|position))(?=.*invoice)",
+        "description": null,
+        "id": null
+      }
+    },
+    {
+      "id": "no-new-agent-checks",
+      "text": "Coding session. User: Fix the login bug. Assistant: Implementation is done, running checks now. Validation plan: typecheck, lint, simulator startup, screenshot comparison. Current tool: pnpm test. User has not requested separate reminders.",
+      "existing": null,
+      "expected": {
+        "count": 0,
+        "title": null,
+        "description": null,
+        "id": null
+      }
+    }
+  ],
+  "userName": "Alex"
+}

@@ -1,0 +1,82 @@
+{
+  "variant": "E03.2-v2",
+  "frozenAt": "2026-10-22T22:18:33.528Z",
+  "rounds": 2,
+  "casesPerRound": 17,
+  "model": "gpt-5.6-luna",
+  "effort": "max",
+  "previousPlanHash": "8682b011aef8921a042a1031cc4c5360ac4f5e0ab4a003982186291803a3df24",
+  "files": {
+    "tests/fixtures/always-on-benchmarks/ownership-contrast.v1.jsonl": "1d57d3ddc1a75cdf989fbfc122c55d172bf95bfb5925c70bfad011cad3b2c0a3",
+    ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-006.input.json": "0d90b732990252abb987b66ebead5e9ea410df58670400d7634ffa12db11e95b",
+    ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-006.parsed.json": "551f7aef18798d12b8e5874d3fc7916e2ce080a7755b4ebcfea5f7926fba02c9",
+    ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-007.input.json": "380920d346eb5c098a0e030e3cadc0b7dee9f9dea857a353d9d7b6cc3b37ae3c",
+    ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-007.parsed.json": "4392a97fe2b33dfb2037d35e0accd0750ef72ccccf53a36542e9887eee36ca18",
+    ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-008.input.json": "66c8ee085806591f3da2ac0a11d5d679f74517a4c216cba45b224deef6b00c2d",
+    ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-008.parsed.json": "06e8dfc2c2c42a2f7f2bcffb2c2c92b37d3674eb438d17c48d78fddeb229868e",
+    ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-001.input.json": "1416ea0ea8774a24d2200ae63a71d91fcdc2f1ebba0e4c61a9af66a7afabda70",
+    ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-001.parsed.json": "914985e73041c25e19160d15a7a366afaf687d14ff57b3991a5e30ff6d4c93b7",
+    ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-002.input.json": "6be9f7a781c5b5ae1e8dfdc11fad465ca0fe241af2672c6f4e4c4958f2a0f7d6",
+    ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-002.parsed.json": "5c17b9756203aad1f2f5fcb171af9df7781362588f567128a6fa02fa52b29164",
+    ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-003.input.json": "5314e773fb7d2c731acafafe4fe55518f27b1fdf95754d6ef390e8b9c18f19fd",
+    ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-003.parsed.json": "1fc64f5ec57aff95f6af8d7952cf71009f80725efdb5199f2e1a37451111f9ce",
+    ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-005.input.json": "d2e5512d9464a24a2be6eb3187775e10ce69ca176018b60a70e25e05b9402307",
+    ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-005.parsed.json": "236ea81d894d6f73e7a5f89e0c308375b288acc70f1a5ef2dc96cf80300e740f",
+    "apps/desktop/scripts/benchmarkIntentShadow.ts": "3d7ce6cbaff3c81a814d4ece00ddb2a0d12e1a6e7aca2e692e68bf4a41356c75",
+    "experiments/always-on-agent/intent-shadow-prompt.txt": "e1c3ff2bbf00846a435923b5120e8338eca1ce76f4bd5ca99deba545b9e83100",
+    "experiments/always-on-agent/intent-shadow.ts": "f047f09893242a148068c7b427ef9d6388514c93b7cc40e3566a644bf178589d",
+    "experiments/always-on-agent/intent-shadow.test.ts": "f8ca315299d1d67a8230be97590a1707695d62d9a4192f3ba50b41ede114de89",
+    "apps/desktop/src/main/dailyReview/codexAgentSdk.ts": "551c9ae62664dbb519168fc9f4b2cc27705b5c1a5924d0a04c2c1dea709c45f8",
+    "apps/desktop/src/main/dailyReview/agentResponse.ts": "79625bd52b075bac1db4297659a85d16bbfc0c2a97c21c030846acf73872314d",
+    "apps/desktop/src/main/codexRuntimePaths.ts": "8acc60600a6fd51ad303564b8e69650c65f2cdc5114b1820f849e29bc443a649",
+    "apps/desktop/package.json": "8b757b5e5f3405e1abbb6af1109d5745e7bd3d7a38e06dcb7446c553edead37c",
+    "apps/desktop/scripts/benchmarkIntentShadowV2.ts": "e785ac7b7174d71cfb4bee2665c179ff3486066e0237bf7a48bab31aa5c58aaa",
+    "experiments/always-on-agent/intent-shadow-v2-prompt.txt": "f72fbe38402b646bd5273e5754e789c994b37b46a58e4b193709adcb096ba679",
+    "experiments/always-on-agent/intent-shadow-v2.ts": "791a092adaa4c869820f05113f4e5d06caa0eb923d71cafe958fb6861ad1664d",
+    "experiments/always-on-agent/intent-shadow-v2.test.ts": "4c952a113d92cb350128517930df91b564c7d59384500f2654aec2881a65f815",
+    "tests/fixtures/always-on-benchmarks/ownership-contrast.v2-additions.jsonl": "d49a1ce006e955770c8a00a822825fc5dc540a9e2e905146cc15cf93a58e61a0",
+    "experiments/always-on-agent/intent-shadow-baseline.json": "8682b011aef8921a042a1031cc4c5360ac4f5e0ab4a003982186291803a3df24"
+  },
+  "schemaHash": "8d15851ab264e521e5b84c07a8d030a5529e4c4f4c2d993f90f8b7960415d4d0",
+  "oldCases": [
+    {
+      "id": "AO-006",
+      "input": ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-006.input.json",
+      "parsed": ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-006.parsed.json"
+    },
+    {
+      "id": "AO-007",
+      "input": ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-007.input.json",
+      "parsed": ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-007.parsed.json"
+    },
+    {
+      "id": "AO-008",
+      "input": ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-008.input.json",
+      "parsed": ".qa/always-on-benchmarks/2026-10-22T15-42-12.392Z/AO-008.parsed.json"
+    },
+    {
+      "id": "HO-001",
+      "input": ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-001.input.json",
+      "parsed": ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-001.parsed.json"
+    },
+    {
+      "id": "HO-002",
+      "input": ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-002.input.json",
+      "parsed": ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-002.parsed.json"
+    },
+    {
+      "id": "HO-003",
+      "input": ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-003.input.json",
+      "parsed": ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-003.parsed.json"
+    },
+    {
+      "id": "HO-005",
+      "input": ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-005.input.json",
+      "parsed": ".qa/always-on-benchmarks/2026-10-22T15-44-37.677Z/HO-005.parsed.json"
+    }
+  ],
+  "contrasts": [
+    "tests/fixtures/always-on-benchmarks/ownership-contrast.v1.jsonl",
+    "tests/fixtures/always-on-benchmarks/ownership-contrast.v2-additions.jsonl"
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "a11y": {
+        "noStaticElementInteractions": "off",
+        "noSvgWithoutTitle": "off",
+        "useAriaPropsSupportedByRole": "off",
+        "useSemanticElements": "off"
+      },
+      "correctness": {
+        "useHookAtTopLevel": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "off"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded",
+      "trailingCommas": "es5"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["experiments/always-on-agent/intent-temporal-v5-baseline.json"],
+      "formatter": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": ["**/*.md"],
+      "formatter": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": ["experiments/**/*.json"],
+      "formatter": {
+        "enabled": false
+      }
+    }
+  ],
+  "files": {
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/.turbo",
+      "!**/.next",
+      "!**/.qa",
+      "!**/.remember-dev",
+      "!**/.dev-relay",
+      "!**/.wrangler",
+      "!**/apps/web/next-env.d.ts",
+      "!**/apps/site/next-env.d.ts",
+      "!**/out",
+      "!**/dist",
+      "!**/.remember-dev-electron",
+      "!**/.remember-electron-qa",
+      "!**/apps/desktop/native/context-capture/target",
+      "!**/apps/desktop/release*",
+      "!**/.release-source-maps",
+      "!**/.pnpm-store",
+      "!**/worker-configuration.d.ts"
+    ]
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  }
+}

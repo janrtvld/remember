@@ -1,0 +1,251 @@
+.hero-lab {
+  --lab-paper: #f7f8f9;
+  --lab-ink: #202426;
+  --lab-muted: #62696d;
+  min-height: 100vh;
+  background: var(--lab-paper);
+  color: var(--lab-ink);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.hero-lab button,
+.hero-lab a {
+  touch-action: manipulation;
+}
+
+.hero-lab-header {
+  position: relative;
+  z-index: 10;
+  color: var(--lab-ink);
+  background: #f9fafb;
+}
+
+.hero-lab[data-direction="prism"] .hero-lab-header {
+  background: #f6f5f1;
+}
+
+.hero-lab[data-direction="continuum"] .hero-lab-header {
+  background: #fafbf9;
+}
+
+.hero-lab-navigation {
+  max-width: 1440px;
+  min-height: 76px;
+  margin: auto;
+  padding: 0 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  font-size: 12px;
+}
+
+.hero-lab-navigation > a {
+  flex: 1;
+}
+.hero-lab-navigation > a img {
+  height: 14px;
+}
+
+.hero-lab-navigation-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  color: #63676a;
+}
+
+.hero-lab-navigation-links a,
+.hero-lab-footer > a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+
+.hero-lab .hero-lab-download {
+  margin-left: auto;
+  flex: 0 0 auto;
+  min-height: 36px;
+  border-radius: 8px;
+  background: #e9ecee;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.hero-lab-skip {
+  position: absolute;
+  transform: translateY(-200%);
+  left: 16px;
+  top: 10px;
+  padding: 10px 16px;
+  background: white;
+  color: #202426;
+  border-radius: 6px;
+}
+
+.hero-lab-skip:focus {
+  transform: none;
+  z-index: 20;
+}
+
+.hero-lab[data-direction="after-hours"] .hero-lab-header {
+  background: #171714;
+  color: #f4f1e9;
+}
+.hero-lab[data-direction="after-hours"] .hero-lab-header img {
+  filter: brightness(0) invert(1);
+}
+.hero-lab[data-direction="after-hours"] .hero-lab-navigation-links {
+  color: #b6b8b1;
+}
+.hero-lab[data-direction="after-hours"] .hero-lab-download {
+  color: #ecece6;
+  background: #30322e;
+}
+
+.hero-lab-product {
+  padding: 100px 48px 64px;
+  scroll-margin-top: 30px;
+  border-top: 1px solid rgb(30 40 50 / 8%);
+  background: #f5f6f7;
+}
+
+.hero-lab-product-intro {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 36px;
+  max-width: 1160px;
+  margin: 0 auto 40px;
+}
+
+.hero-lab-product-intro h2 {
+  max-width: 500px;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.06;
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+
+.hero-lab-product-intro p {
+  max-width: 340px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--lab-muted);
+}
+
+.hero-lab-product-frame {
+  max-width: 1200px;
+  margin: auto;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid rgb(30 40 50 / 10%);
+  border-radius: 14px;
+  background: white;
+  box-shadow:
+    0 20px 70px -30px rgb(25 38 48 / 20%),
+    0 4px 10px rgb(25 38 48 / 3%);
+}
+
+.hero-lab-product-canvas {
+  min-width: 1040px;
+}
+
+.hero-lab-product-scaled {
+  min-width: 1040px;
+}
+
+.hero-lab-product-frame:focus-visible {
+  outline: 2px solid #737b80;
+  outline-offset: 4px;
+}
+
+.hero-lab-local-note {
+  margin: 26px auto 0;
+  color: var(--lab-muted);
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.hero-lab-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 48px 104px;
+  color: var(--lab-muted);
+  font-size: 12px;
+  border-top: 1px solid rgb(30 40 50 / 8%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hero-lab-navigation-links a:hover,
+  .hero-lab-footer > a:hover {
+    color: var(--lab-ink);
+  }
+  .hero-lab[data-direction="after-hours"] .hero-lab-navigation-links a:hover {
+    color: white;
+  }
+}
+
+@media (max-width: 1100px) {
+  .hero-lab[data-direction="continuum"] .hero-lab-navigation-links {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .hero-lab-navigation {
+    padding: 0 24px;
+    gap: 16px;
+    min-height: 68px;
+  }
+  .hero-lab-navigation-links {
+    display: none;
+  }
+  .hero-lab-product {
+    padding: 64px 20px 40px;
+  }
+  .hero-lab-product-intro {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .hero-lab-product-intro h2 {
+    font-size: 34px;
+    max-width: 270px;
+  }
+  .hero-lab-product-frame {
+    height: 358px;
+  }
+  .hero-lab-product-scaled {
+    min-width: 520px;
+    width: 520px;
+    height: 358px;
+    overflow: hidden;
+  }
+  .hero-lab-product-canvas {
+    width: 1040px;
+    transform: scale(0.5);
+    transform-origin: top left;
+  }
+  .hero-lab-footer {
+    padding: 24px 24px 96px;
+    flex-wrap: wrap;
+  }
+  .hero-lab-footer span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-lab *,
+  .hero-lab *::before,
+  .hero-lab *::after {
+    scroll-behavior: auto;
+    transition: none;
+    animation: none;
+  }
+}

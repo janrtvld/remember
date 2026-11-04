@@ -1,0 +1,126 @@
+{
+  "missingRevision": {
+    "originalPaths": {
+      "input": "/private/tmp/remember-intent-shadow-v2/runs/2026-10-22T22-18-39.514Z-round1/HO-001.input.json",
+      "raw": "/private/tmp/remember-intent-shadow-v2/runs/2026-10-22T22-18-39.514Z-round1/HO-001.raw.json"
+    },
+    "sha256": {
+      "input": "1416ea0ea8774a24d2200ae63a71d91fcdc2f1ebba0e4c61a9af66a7afabda70",
+      "raw": "0c620fb72361deb3fa2b070ba9bd1b9ce71fa414a2cb7bf8d8562dff55cd31d7"
+    },
+    "input": {
+      "language": "nl",
+      "userName": "Jan",
+      "workItems": [],
+      "evidence": [
+        {
+          "kind": "speech",
+          "sourceId": "HO-001:s1",
+          "evidenceId": "speech:HO-001:s1",
+          "workdayId": "benchmark-2026-10-22",
+          "revision": "dbe59e16df109e270cf3d566b14c8e4bd83ebae7dd94f056168922a317e8a782",
+          "observedAt": 1792652408000,
+          "text": "Jan, zou jij Lena vandaag een bericht sturen dat de testomgeving vrijdag beschikbaar komt? Zij plant haar demo daarop.",
+          "source": "system",
+          "appName": "",
+          "bundleId": "",
+          "windowTitle": "",
+          "url": ""
+        }
+      ]
+    },
+    "raw": {
+      "records": [
+        {
+          "evidenceId": "speech:HO-001:s1",
+          "sourceId": "HO-001:s1",
+          "revision": "dbe59e16df109e270cf3d566b14c8e4bd83eb7dd94f056168922a317e8a782",
+          "speechAct": "direct_request",
+          "claimedOwner": "user",
+          "actionStatus": "active",
+          "actionSummary": "Stuur Lena vandaag een bericht.",
+          "addresseeQuote": "Jan",
+          "actionQuote": "Lena vandaag een bericht sturen",
+          "payloadQuote": "dat de testomgeving vrijdag beschikbaar komt",
+          "reversalQuotes": []
+        }
+      ]
+    }
+  },
+  "mediaAttribution": {
+    "originalPaths": {
+      "input": "/private/tmp/remember-intent-shadow-v2/runs/2026-10-22T22-20-54.916Z-round2/AO-008.input.json",
+      "raw": "/private/tmp/remember-intent-shadow-v2/runs/2026-10-22T22-20-54.916Z-round2/AO-008.raw.json"
+    },
+    "sha256": {
+      "input": "66c8ee085806591f3da2ac0a11d5d679f74517a4c216cba45b224deef6b00c2d",
+      "raw": "e20e15abbedfc4cd922eeb1a2a3365c27fadd7cc0170f8b733a7a678db2d510f"
+    },
+    "input": {
+      "language": "nl",
+      "userName": "Jan",
+      "workItems": [],
+      "evidence": [
+        {
+          "kind": "context",
+          "sourceId": "AO-008:c1",
+          "evidenceId": "AO-008:c1",
+          "workdayId": "benchmark-2026-10-22",
+          "revision": "0386f2dda6b6b319ffc7dc66cddc93753af0a8bb857904a541f8ab82caf6a5c8",
+          "observedAt": 1792652401000,
+          "text": "Video afspelen · Training verkoopgesprekken · 04:12 / 12:20",
+          "source": "screen",
+          "appName": "Browser",
+          "bundleId": "",
+          "windowTitle": "",
+          "url": "https://training.example.invalid/video/voorbeeld"
+        },
+        {
+          "kind": "speech",
+          "sourceId": "AO-008:s1",
+          "evidenceId": "speech:AO-008:s1",
+          "workdayId": "benchmark-2026-10-22",
+          "revision": "2d6e8ff45783bb55bd769aa394f03ce43555df8cef15926a6d4abaf99784a32f",
+          "observedAt": 1792652405000,
+          "text": "Jan, kun jij morgen de offerte opsturen naar de klant?",
+          "source": "system",
+          "appName": "",
+          "bundleId": "",
+          "windowTitle": "",
+          "url": ""
+        },
+        {
+          "kind": "context",
+          "sourceId": "AO-008:c2",
+          "evidenceId": "AO-008:c2",
+          "workdayId": "benchmark-2026-10-22",
+          "revision": "5c8df94b072a7e8e44c69fca5d03ac70d1132ae077788b4d3972405530911ccd",
+          "observedAt": 1792652407000,
+          "text": "Video afspelen · Training verkoopgesprekken · 04:18 / 12:20",
+          "source": "screen",
+          "appName": "Browser",
+          "bundleId": "",
+          "windowTitle": "",
+          "url": "https://training.example.invalid/video/voorbeeld"
+        }
+      ]
+    },
+    "raw": {
+      "records": [
+        {
+          "evidenceId": "speech:AO-008:s1",
+          "sourceId": "AO-008:s1",
+          "revision": "2d6e8ff45783bb55bd769aa394f03ce43555df8cef15926a6d4abaf99784a32f",
+          "speechAct": "reported",
+          "claimedOwner": "unknown",
+          "actionStatus": "unclear",
+          "actionSummary": "In de video wordt gevraagd om morgen de offerte naar de klant op te sturen.",
+          "addresseeQuote": null,
+          "actionQuote": "kun jij morgen de offerte opsturen naar de klant",
+          "payloadQuote": null,
+          "reversalQuotes": []
+        }
+      ]
+    }
+  }
+}

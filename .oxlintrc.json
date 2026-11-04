@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "jsPlugins": ["@shadcn/lint"],
+  "categories": {
+    "correctness": "off"
+  },
+  "rules": {},
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/.turbo/**",
+    "**/.next/**",
+    "**/.qa/**",
+    "**/.remember-dev/**",
+    "**/.dev-relay/**",
+    "**/.wrangler/**",
+    "**/next-env.d.ts",
+    "**/out/**",
+    "**/dist/**",
+    "**/.remember-dev-electron/**",
+    "**/.remember-electron-qa/**"
+  ]
+}

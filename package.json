@@ -1,0 +1,39 @@
+{
+  "name": "remember",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": "^26.13.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@remember/web",
+    "dev:desktop": "turbo run dev --filter=@remember/web --filter=@remember/desktop",
+    "dev:site": "turbo run dev --filter=@remember/site",
+    "qa:electron": "pnpm --filter @remember/desktop exec tsx scripts/qa/run.ts",
+    "qa:audio": "pnpm qa:electron audio",
+    "build": "turbo run build --filter=@remember/web --filter=@remember/desktop",
+    "package": "pnpm --filter @remember/desktop package",
+    "format": "pnpm exec biome check --write .",
+    "format:check": "pnpm exec biome check .",
+    "lint": "oxlint apps/web apps/site",
+    "types:check": "turbo run types:check",
+    "test": "turbo run test",
+    "validate": "pnpm format:check && pnpm lint && pnpm types:check && pnpm test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.4",
+    "@shadcn/lint": "^0.2.5",
+    "oxlint": "^1.91.0",
+    "turbo": "2.11.10",
+    "typescript": "^7.0.2"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "26.13.0",
+      "onFail": "download"
+    }
+  }
+}

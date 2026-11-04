@@ -1,0 +1,11 @@
+{
+  "version": "e03.4-pure-quote-layout",
+  "frozenAt": "2026-10-22T22:55:07.979778+00:00",
+  "scope": "Independent exact-quote partial-order helper only. No source-binding integration, new model output, semantic accuracy, native provenance or production claim.",
+  "files": {
+    "experiments/always-on-agent/intent-quote-layout-v4.ts": "b13279eb79d430d8012deea81415d3e71375535597d56ec7ba0493fbe49e6bd4",
+    "experiments/always-on-agent/intent-quote-layout-v4.test.ts": "b3190dcc6619712c9a56713e57dbddc535ac2a89a31c9b7adb996e063902d17f",
+    "tests/fixtures/always-on-benchmarks/ownership-natural-order.v3.jsonl": "a7f03ddd0160dd50bd1ce785e5c8eb7c349ed91c8c542d8d9fc92e53d5cdef0b"
+  },
+  "contentHash": "70be789305aaac5ec5abdc0826477b620f1d482f096d8140287f8f6f21f57b81"
+}

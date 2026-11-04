@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "kind": { "type": "string", "enum": ["silent", "observe", "clarify", "offer", "prepare"] },
+    "text": { "type": "string" },
+    "sourceIds": { "type": "array", "items": { "type": "string" } },
+    "uncertainty": { "type": "string", "enum": ["none", "meaning", "ownership", "conflict"] },
+    "rationale": { "type": "string" },
+    "preparation": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "grantId": { "type": "string" }, "description": { "type": "string" } },
+          "required": ["grantId", "description"]
+        }
+      ]
+    }
+  },
+  "required": ["kind", "text", "sourceIds", "uncertainty", "rationale", "preparation"]
+}

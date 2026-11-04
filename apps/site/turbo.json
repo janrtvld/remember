@@ -1,0 +1,12 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": ["SITE_URL"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "types:check": {
+      "outputs": ["tsconfig.tsbuildinfo"]
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "language": "nl",
+  "clock": {
+    "utc": "2026-10-23T13:50:00.000Z",
+    "local": "23 oktober 2026 15:50:00 CEST",
+    "timeZone": "Europe/Amsterdam"
+  },
+  "projectLabel": "Atlas",
+  "trigger": {
+    "sourceId": "bp03:context",
+    "observedAt": "2026-10-20T13:50:00.000Z",
+    "acceptedAt": "2026-10-23T13:50:00.000Z",
+    "ageMs": 259200000,
+    "freshness": "stale"
+  },
+  "sources": [
+    {
+      "sourceId": "bp03:context",
+      "revision": "29cd0f21abd62362469405f538bb508bd9cf44e0bad13cccfd298a820c075c6a",
+      "kind": "context",
+      "current": false,
+      "observedAt": "2026-10-20T13:50:00.000Z",
+      "acceptedAt": "2026-10-23T13:50:00.000Z",
+      "provenance": {
+        "origin": "synthetic-accessibility",
+        "speaker": "unknown",
+        "mediaPlayback": "unknown",
+        "causedByActionId": null
+      },
+      "text": "Atlas-pilot — voorbereiding overleg.\nDashboard: de totale uitval is nu 18%.\nHet besluit over bredere uitrol staat nog open.\nGraag een korte voorbereiding voor dit overleg."
+    },
+    {
+      "sourceId": "bp03:personal",
+      "revision": "89e2ccf99197cc4307c307a60414eea88b45882f99ca7b6fe40d7caff8b7c3df",
+      "kind": "personal-page",
+      "current": true,
+      "observedAt": "2026-10-22T15:00:00.000Z",
+      "acceptedAt": "2026-10-23T13:50:00.000Z",
+      "provenance": {
+        "origin": "synthetic-personal-page",
+        "speaker": "unknown",
+        "mediaPlayback": "unknown",
+        "causedByActionId": null
+      },
+      "text": "Atlas — afgesloten review van 22 oktober.\nDe oude uitrolbespreking is afgerond; het bijbehorende voorbereidingsverzoek is vervallen.\nDe bewaarde briefing is al tijdens die bespreking gebruikt.\nEr staat geen nieuwe Atlas-bespreking of heropeningsvraag in deze bron.\nDe oude dashboardtekst met 18% hoort bij de vorige review en is geen actuele meting."
+    }
+  ],
+  "candidate": {
+    "kind": "private-briefing",
+    "sourceIds": [
+      "bp03:context"
+    ]
+  }
+}

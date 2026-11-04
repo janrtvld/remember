@@ -1,0 +1,119 @@
+.glass-ribbon-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  color: #64748b;
+}
+
+.glass-ribbon-surface {
+  position: absolute;
+  inset: 0 0 24px;
+  overflow: hidden;
+  cursor: auto;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.glass-ribbon-scene[data-ready="true"] .glass-ribbon-surface {
+  cursor: grab;
+}
+
+.glass-ribbon-scene[data-ready="true"] .glass-ribbon-surface[data-dragging] {
+  cursor: grabbing;
+}
+
+.glass-ribbon-canvas,
+.glass-ribbon-fallback {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.glass-ribbon-canvas {
+  opacity: 0;
+}
+
+.glass-ribbon-canvas[data-ready="true"] {
+  opacity: 1;
+}
+
+.glass-ribbon-fallback[data-hidden="true"] {
+  visibility: hidden;
+}
+
+.glass-ribbon-controls {
+  position: absolute;
+  right: 28px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.glass-ribbon-hint {
+  color: #94a3b8;
+}
+
+.glass-ribbon-scene[data-ready="false"] .glass-ribbon-hint {
+  visibility: hidden;
+}
+
+.glass-ribbon-toggle {
+  display: inline-flex;
+  min-width: 102px;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid rgb(148 163 184 / 20%);
+  border-radius: 6px;
+  background: rgb(248 250 252 / 65%);
+  color: #64748b;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 500;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.glass-ribbon-toggle:focus-visible {
+  outline: 2px solid #64748b;
+  outline-offset: 3px;
+}
+
+.glass-ribbon-toggle:active {
+  background: #e2e8f0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .glass-ribbon-toggle:hover {
+    background: #f1f5f9;
+    color: #334155;
+  }
+}
+
+@media (max-width: 600px) {
+  .glass-ribbon-controls {
+    right: 16px;
+    bottom: 4px;
+    gap: 12px;
+  }
+
+  .glass-ribbon-toggle {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-ribbon-toggle {
+    transition: none;
+  }
+}

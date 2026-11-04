@@ -1,0 +1,14 @@
+{
+  "version": "e03.3-pure-v3",
+  "frozenAt": "2026-10-22T22:44:10.661213+00:00",
+  "scope": "Pure caller-bound source adapter and saved-artifact fixture. No model calls, production integration, native restart, policy-resolver integration, or provider-response correlation proof. Fixed lexical order remains unchanged.",
+  "files": {
+    "experiments/always-on-agent/intent-shadow-v3.ts": "47ffea0d97c43b511fdbf727b1aea5d867ff9c7a9f52d1d660974d19357f5b67",
+    "experiments/always-on-agent/intent-shadow-v3.test.ts": "78c1d6f6f75762655ebd48f5ddcf453ced737a35f02f65199996ae5e40b3cf65",
+    "tests/fixtures/always-on-benchmarks/ownership-natural-order.v3.jsonl": "a7f03ddd0160dd50bd1ce785e5c8eb7c349ed91c8c542d8d9fc92e53d5cdef0b",
+    "tests/fixtures/always-on-benchmarks/source-binding.v3.json": "65ed1a4945ec250afc1341ca31a56ded7c7dc88e22a0705af4331dd2963d91a8",
+    "experiments/always-on-agent/intent-shadow-v2.ts": "791a092adaa4c869820f05113f4e5d06caa0eb923d71cafe958fb6861ad1664d",
+    "experiments/always-on-agent/intent-shadow-v2-baseline.json": "ba9f8bdadcd47add9658fd9c18da921bf003f2e35e1c56e00e3a4020961b6156"
+  },
+  "contentHash": "0361a67e0dfd42ba328533bd08db87194c951cf167d218c8f016acacf20cff56"
+}

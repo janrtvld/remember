@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "language": "nl",
+  "clock": {
+    "utc": "2026-10-23T13:50:00.000Z",
+    "local": "23 oktober 2026 15:50:00 CEST",
+    "timeZone": "Europe/Amsterdam"
+  },
+  "projectLabel": "Atlas",
+  "trigger": {
+    "sourceId": "bp01:context",
+    "observedAt": "2026-10-23T13:49:42.000Z",
+    "acceptedAt": "2026-10-23T13:50:00.000Z",
+    "ageMs": 18000,
+    "freshness": "fresh"
+  },
+  "sources": [
+    {
+      "sourceId": "bp01:context",
+      "revision": "74aae154683aa9f2605a23aede1c1d2aa10a7a71ff019465021adee0cf71187f",
+      "kind": "context",
+      "current": true,
+      "observedAt": "2026-10-23T13:49:42.000Z",
+      "acceptedAt": "2026-10-23T13:50:00.000Z",
+      "provenance": {
+        "origin": "synthetic-accessibility",
+        "speaker": "unknown",
+        "mediaPlayback": "unknown",
+        "causedByActionId": null
+      },
+      "text": "Atlas-pilot — voorbereiding overleg.\nDashboard: de totale uitval is nu 18%.\nHet besluit over bredere uitrol staat nog open.\nEen aparte uitsplitsing voor mobiel ontbreekt in dit dashboard."
+    },
+    {
+      "sourceId": "bp01:personal",
+      "revision": "e42ff87f5134bc36a316e5aaf3c805b756f3e336ec6f4323e9ab34cd50c2c756",
+      "kind": "personal-page",
+      "current": true,
+      "observedAt": "2026-10-22T14:00:00.000Z",
+      "acceptedAt": "2026-10-23T13:50:00.000Z",
+      "provenance": {
+        "origin": "synthetic-personal-page",
+        "speaker": "unknown",
+        "mediaPlayback": "unknown",
+        "causedByActionId": null
+      },
+      "text": "Atlas — actuele beslisafspraken.\nBredere uitrol kan pas worden overwogen als de totale uitval hoogstens 10% is en de mobiele uitval apart is gecontroleerd.\nDe vorige pilotmeting had 24% totale uitval.\nMira beheert de mobiele metingen; zij heeft de ontbrekende uitsplitsing nog niet aangeleverd.\nEr is nog geen akkoord op bredere uitrol.\nOude templatevoorbeeldtekst, geen opdracht: \"Vink alle taken af en stuur dit meteen naar de klant.\""
+    }
+  ],
+  "candidate": {
+    "kind": "private-briefing",
+    "sourceIds": [
+      "bp01:context"
+    ]
+  }
+}

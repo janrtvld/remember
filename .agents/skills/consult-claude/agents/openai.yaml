@@ -1,0 +1,4 @@
+interface:
+  display_name: "Consult Claude"
+  short_description: "Get a reliable, safe Claude second opinion"
+  default_prompt: "Use $consult-claude to obtain a Claude second opinion for this Remember task."

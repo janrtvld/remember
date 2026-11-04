@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remember UI Decisions"
+  short_description: "Keep Remember compact, calm, and consistent"
+  default_prompt: "Use $daymark-ui-decisions to implement this Remember interface change consistently."

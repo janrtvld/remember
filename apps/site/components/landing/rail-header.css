@@ -1,0 +1,152 @@
+.rail-header {
+  position: relative;
+  background: oklch(var(--neutral-50));
+}
+
+.rail-header-cross {
+  display: none;
+}
+
+.rail-header-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 72px;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 24px;
+  border-inline: 0.5px solid var(--grid-line, oklch(var(--neutral-300)));
+}
+
+.rail-header-left,
+.rail-header-links {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.rail-header-left {
+  gap: 28px;
+}
+
+.rail-header-links {
+  gap: 12px;
+}
+
+.rail-header-logo {
+  flex-shrink: 0;
+}
+
+.rail-header-logo > a {
+  min-height: 44px;
+  padding-block: 16px;
+}
+
+.rail-header a {
+  touch-action: manipulation;
+}
+
+.rail-header-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 32px;
+  padding-inline: 8px;
+  border-radius: 6px;
+  color: oklch(var(--neutral-700));
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    color 150ms ease-out,
+    background-color 150ms ease-out;
+}
+
+.rail-header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 12px;
+  margin-inline-start: auto;
+}
+
+.rail-header-download {
+  position: relative;
+  white-space: nowrap;
+}
+
+.rail-header-link::before,
+.rail-header-download::before {
+  content: "";
+  position: absolute;
+  inset: -6px 0;
+}
+
+.rail-header a:focus-visible {
+  outline: 2px solid oklch(var(--neutral-500));
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rail-header-link:hover {
+    background: oklch(var(--neutral-100));
+    color: oklch(var(--neutral-900));
+  }
+
+  .rail-header-logo > a:hover {
+    opacity: 0.75;
+  }
+}
+
+.rail-header-link:active {
+  background: oklch(var(--neutral-200));
+}
+
+@media (max-width: 639px) {
+  .rail-header-row {
+    gap: 12px;
+    padding-inline: 12px;
+  }
+
+  .rail-header-left {
+    gap: 12px;
+  }
+
+  .rail-header-link {
+    padding-inline: 8px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 539px) {
+  .rail-header-product,
+  .rail-header-features {
+    display: none;
+  }
+}
+
+@media (max-width: 359px) {
+  .rail-header-row,
+  .rail-header-left,
+  .rail-header-actions {
+    gap: 8px;
+  }
+
+  .rail-header-download > svg {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-header a {
+    transition: none;
+  }
+
+  .rail-header a:active,
+  .rail-header .rail-header-download:active {
+    scale: 1;
+  }
+}

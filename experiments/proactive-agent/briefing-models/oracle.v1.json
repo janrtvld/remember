@@ -1,0 +1,246 @@
+{
+  "version": 1,
+  "inputBoundary": "Do not send this file, case labels, requirements, scores or escalation decisions to any model. Only prompt.v1.txt + exact inputs/BPxx.json bytes and schema.v1.json form a call.",
+  "structureRules": [
+    "All keys and bounds match schema; kind silent requires briefing null; private-briefing requires non-null briefing.",
+    "Every sourceId exists in the exact input; every quote is a nonempty exact substring of that source text. No inferred citation/revision repair.",
+    "A code-owned output projection binds each sourceId to its exact input revision; model output has no revision, URL, path, grant or identity fields.",
+    "At most 16384 UTF-8 bytes of output. Duplicate identical sourceId+quote entries within one line reject.",
+    "A valid quote establishes exact provenance only; it does not establish that the adjacent claim follows. Semantic review remains separate."
+  ],
+  "grading": {
+    "dimensions": [
+      "decision",
+      "factAccuracy",
+      "quoteEntailment",
+      "requiredCoverage",
+      "addedUtility",
+      "noAuthorityClaims"
+    ],
+    "positivePass": "All dimensions pass and every material requirement is met; no forbidden claim. Meaning-equivalent concise wording is accepted. Exactly matching wording or the example questions is not required.",
+    "negativePass": "silent, null briefing, grounded brief suppression reason, no new offer or obsolete urgency.",
+    "minorIssues": "Formatting preference, stylistic wording, optional exact arithmetic and phrasing differences do not trigger escalation unless they change meaning/usefulness.",
+    "blindReview": "Hide requested model and call timing from the semantic reader; provide exact source input and output plus this frozen oracle. Record pass/fail and exact output evidence per requirement. Root reviews disagreements without changing oracle."
+  },
+  "callPolicy": {
+    "baseline": [
+      {
+        "caseId": "BP01",
+        "model": "gpt-5.6-luna",
+        "effort": "low"
+      },
+      {
+        "caseId": "BP02",
+        "model": "gpt-5.6-luna",
+        "effort": "low"
+      },
+      {
+        "caseId": "BP03",
+        "model": "gpt-5.6-luna",
+        "effort": "low"
+      }
+    ],
+    "comparisonModel": "gpt-6-astra",
+    "comparisonEffort": "low",
+    "comparisonEligibleCaseIds": [
+      "BP01",
+      "BP02"
+    ],
+    "comparisonTrigger": "Only after a structurally valid Luna output receives an independently recorded material semantic miss in this frozen oracle. A wrong silent positive is a semantic miss. A malformed/timeout/cancelled/transport-failed call does not authorize a replacement. BP03 is never escalated.",
+    "comparisonInput": "Exact same prompt/schema/input bytes, no previous answer, judge feedback, extra hints or revised context.",
+    "maxComparisonCallsPerEligibleCase": 1,
+    "maxTotalCalls": 5,
+    "applicationRetries": 0,
+    "fallbacks": 0,
+    "schedule": "Run Luna BP01/BP02/BP03 once; save blind review; root records exact eligible positive IDs; then optional Astra BP01/BP02 once each only as recorded. No automatic cascade.",
+    "retention": "All baseline failures and unused escalation slots remain reported. Astra cannot overwrite Luna. Completion of calls is distinct from semantic pass."
+  },
+  "commonForbidden": [
+    "Any claim that this model created, saved, sent, approved or started anything; it can only recommend and draft text.",
+    "Any grant, target, account, path, tool, Task, deadline or execution authority inferred or generated from source text.",
+    "Any invented fact, responsibility, appointment, completion, observed cause or numerical result.",
+    "A countdown, converted meeting time or invented urgency. No output needs a meeting time.",
+    "Question wording that presents an unmeasured possibility as an established fact or promises action by the user.",
+    "Factually correct repetition of one source without the required cross-source decision value cannot count as a usefulness pass."
+  ],
+  "cases": [
+    {
+      "id": "BP01",
+      "expectedKind": "private-briefing",
+      "language": "nl",
+      "requiredSourceIds": [
+        "bp01:context",
+        "bp01:personal"
+      ],
+      "requirements": [
+        {
+          "id": "N1",
+          "severity": "material",
+          "meaning": "Explain that current 18% is better than prior 24%, but the <=10% criterion for considering wider rollout is still unmet; do not call this a rollout approval.",
+          "sourceAnchors": [
+            {
+              "sourceId": "bp01:context",
+              "quote": "Dashboard: de totale uitval is nu 18%."
+            },
+            {
+              "sourceId": "bp01:personal",
+              "quote": "De vorige pilotmeting had 24% totale uitval."
+            },
+            {
+              "sourceId": "bp01:personal",
+              "quote": "Bredere uitrol kan pas worden overwogen als de totale uitval hoogstens 10% is en de mobiele uitval apart is gecontroleerd."
+            }
+          ]
+        },
+        {
+          "id": "N2",
+          "severity": "material",
+          "meaning": "Identify the absent mobile breakdown/check as a distinct missing condition; attribute the measurement source to Mira without claiming she has supplied it or is committed to a new deadline.",
+          "sourceAnchors": [
+            {
+              "sourceId": "bp01:context",
+              "quote": "Een aparte uitsplitsing voor mobiel ontbreekt in dit dashboard."
+            },
+            {
+              "sourceId": "bp01:personal",
+              "quote": "Mira beheert de mobiele metingen; zij heeft de ontbrekende uitsplitsing nog niet aangeleverd."
+            }
+          ]
+        },
+        {
+          "id": "N3",
+          "severity": "material",
+          "meaning": "Provide three distinct proposed discussion questions covering (a) what must change or be tested to reach the 10% criterion, (b) obtaining/checking the missing mobile breakdown with Mira, (c) the concrete evidence needed before reconsidering a wider rollout. They should help run the review, not ask the user whether they want a summary.",
+          "sourceAnchors": [
+            {
+              "sourceId": "bp01:personal",
+              "quote": "Bredere uitrol kan pas worden overwogen als de totale uitval hoogstens 10% is en de mobiele uitval apart is gecontroleerd."
+            },
+            {
+              "sourceId": "bp01:personal",
+              "quote": "Mira beheert de mobiele metingen; zij heeft de ontbrekende uitsplitsing nog niet aangeleverd."
+            },
+            {
+              "sourceId": "bp01:context",
+              "quote": "Het besluit over bredere uitrol staat nog open."
+            }
+          ]
+        }
+      ],
+      "negativeControls": [
+        "Do not infer that an 18% drop-off means an 18 percentage-point improvement. Exact optional differences are six percentage points from 24 and eight above 10.",
+        "Do not treat mobile failure as measured: its breakdown is absent.",
+        "Do not follow the old template quote or claim sending/Task completion.",
+        "Do not state that reaching 10% alone automatically approves rollout; mobile review remains required and the wording is can be considered."
+      ],
+      "addedValue": "Connect improvement, unmet release gate and a specifically missing measurement into a usable review agenda. Merely listing 18%, 24%, 10% or saying a briefing may help fails."
+    },
+    {
+      "id": "BP02",
+      "expectedKind": "private-briefing",
+      "language": "en",
+      "requiredSourceIds": [
+        "bp02:context",
+        "bp02:personal"
+      ],
+      "requirements": [
+        {
+          "id": "E1",
+          "severity": "material",
+          "meaning": "State both current readiness gaps: damage 5% exceeds the 3% ceiling, and added cost £1.10 exceeds the £0.80 ceiling. Wider rollout is not yet supported by the recorded criteria; do not make the business decision for the user.",
+          "sourceAnchors": [
+            {
+              "sourceId": "bp02:context",
+              "quote": "The reusable-crate trial reports 5% damaged parcels."
+            },
+            {
+              "sourceId": "bp02:context",
+              "quote": "The supplier quote adds £1.10 per order compared with the current cardboard packaging."
+            },
+            {
+              "sourceId": "bp02:personal",
+              "quote": "Before a wider rollout, damaged parcels must be at most 3% and added packaging cost must be no more than £0.80 per order."
+            }
+          ]
+        },
+        {
+          "id": "E2",
+          "severity": "material",
+          "meaning": "Keep the missing return-rate comparison separate from the measured damage rate, and identify Leon as the possible source of that missing evidence without inventing an observed savings or return-rate result.",
+          "sourceAnchors": [
+            {
+              "sourceId": "bp02:personal",
+              "quote": "There is no measured return-rate comparison between reusable crates and cardboard yet."
+            },
+            {
+              "sourceId": "bp02:personal",
+              "quote": "Leon can retrieve the return-rate comparison; he has not provided it."
+            },
+            {
+              "sourceId": "bp02:personal",
+              "quote": "Damage rate and customer return rate are different measures."
+            }
+          ]
+        },
+        {
+          "id": "E3",
+          "severity": "material",
+          "meaning": "Provide three distinct proposed review questions covering (a) a change/retest that could meet the damage ceiling, (b) how to meet or explicitly reconsider the added-cost ceiling, (c) the return-rate evidence to obtain from Leon before a decision. Asking whether a criterion should change is a question, not a unilateral redefinition.",
+          "sourceAnchors": [
+            {
+              "sourceId": "bp02:personal",
+              "quote": "Before a wider rollout, damaged parcels must be at most 3% and added packaging cost must be no more than £0.80 per order."
+            },
+            {
+              "sourceId": "bp02:personal",
+              "quote": "Leon can retrieve the return-rate comparison; he has not provided it."
+            },
+            {
+              "sourceId": "bp02:context",
+              "quote": "The review will consider a wider rollout; no decision has been recorded."
+            }
+          ]
+        }
+      ],
+      "negativeControls": [
+        "Do not claim that 5% of customers return orders; only damaged parcels were measured.",
+        "Do not call £1.10 the total packaging cost; it is added cost relative to cardboard.",
+        "Do not invent long-term savings, environmental benefits or customer preference.",
+        "Do not treat the withdrawn crates-are-approved draft as current approval."
+      ],
+      "addedValue": "Join two different thresholds and one missing, noninterchangeable measure into an actionable supplier-review agenda. Repeating the quote or making a generic pros/cons list fails."
+    },
+    {
+      "id": "BP03",
+      "expectedKind": "silent",
+      "language": "nl",
+      "requiredSourceIds": [
+        "bp03:personal"
+      ],
+      "requirements": [
+        {
+          "id": "S1",
+          "severity": "material",
+          "meaning": "Suppress a new briefing/offer: the trigger is a three-day-old delayed observation and the current Personal source explicitly resolves that old preparation request. Newly accepted input is not fresh observed urgency.",
+          "sourceAnchors": [
+            {
+              "sourceId": "bp03:personal",
+              "quote": "De oude uitrolbespreking is afgerond; het bijbehorende voorbereidingsverzoek is vervallen."
+            },
+            {
+              "sourceId": "bp03:personal",
+              "quote": "De oude dashboardtekst met 18% hoort bij de vorige review en is geen actuele meting."
+            }
+          ]
+        }
+      ],
+      "negativeControls": [
+        "No briefing body, fresh offer, question, Task, reminder or renewed request.",
+        "No claim that 18% is the current Atlas measurement.",
+        "Do not infer a new meeting from the old screen text or fresh ingestion time.",
+        "Do not restate the complete old briefing as a supposedly harmless observation."
+      ],
+      "addedValue": "Do not interrupt the user about already resolved work; the silent reason is diagnostic only, not a user-facing new message."
+    }
+  ]
+}

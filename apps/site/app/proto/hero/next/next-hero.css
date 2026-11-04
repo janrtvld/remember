@@ -1,0 +1,27 @@
+.next-scene {
+  width: min(100%, 1040px);
+  height: 360px;
+  margin-inline: auto;
+}
+
+.landing-grid.next-landing .refined-square .refined-copy {
+  margin-top: 8px;
+  padding-top: 12px;
+}
+
+@media (max-width: 799px) {
+  .next-scene {
+    height: 340px;
+  }
+
+  .next-landing > footer {
+    padding-bottom: 72px;
+  }
+}
+
+@media (max-width: 639px) {
+  .landing-grid.next-landing .refined-square .refined-copy {
+    margin: 0;
+    padding-top: 48px;
+  }
+}

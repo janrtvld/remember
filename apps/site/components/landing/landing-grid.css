@@ -1,0 +1,357 @@
+.landing-grid {
+  --grid-line: oklch(var(--neutral-250));
+  --section-spacer-height: 64px;
+}
+
+.landing-grid .section-spacer {
+  height: var(--section-spacer-height);
+  border-top: 0.5px solid var(--grid-line);
+}
+
+@media (max-width: 760px) {
+  .landing-grid {
+    --section-spacer-height: 40px;
+  }
+}
+
+.landing-grid > .rail-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+
+.landing-grid > .rail-header::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline: 0;
+  border-top: 0.5px solid var(--grid-line);
+  pointer-events: none;
+}
+
+.landing-grid .rail-header-row {
+  position: relative;
+  border-inline: 0;
+}
+
+/* Continue the frame above the document during elastic overscroll. */
+.landing-grid .rail-header-row::before {
+  content: "";
+  position: absolute;
+  inset-block: -100vh 0;
+  inset-inline: 0;
+  border-inline: 0.5px solid var(--grid-line);
+  pointer-events: none;
+}
+
+.landing-grid .rail-header-cross {
+  display: block;
+}
+
+.landing-grid main {
+  container-type: inline-size;
+  margin-top: 0;
+}
+
+.landing-grid .product-preview-canvas {
+  width: 1166px;
+}
+
+.landing-grid > footer > .landing-frame-x {
+  border-inline: 0.5px solid var(--grid-line);
+}
+
+/* Both axes use one pitch, independent of the content's height. */
+.landing-grid .square-grid {
+  --square-pitch: calc(100cqw / var(--square-columns));
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(var(--square-columns), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--square-rows), var(--square-pitch));
+}
+
+.landing-grid .square-lattice {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  background-image: linear-gradient(to right, transparent calc(100% - 0.5px), var(--grid-line) 0);
+  background-size: var(--square-pitch) 100%;
+  background-repeat: repeat-x;
+  clip-path: inset(0 0.5px 0 0);
+}
+
+.landing-grid .square-grid > .square-lattice::after {
+  content: "";
+  position: absolute;
+  /* Stop before the final stripe; the preview owns the shared bottom rule. */
+  inset: 0 0 calc(var(--square-pitch) / 2);
+  background-image: linear-gradient(to bottom, transparent calc(100% - 0.5px), var(--grid-line) 0);
+  background-size: 100% var(--square-pitch);
+  background-repeat: repeat-y;
+}
+
+.landing-grid .square-copy {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  background: oklch(var(--neutral-50));
+  padding: 24px;
+  border-inline-end: 0.5px solid var(--grid-line);
+}
+
+.landing-grid .square-inset {
+  --square-columns: 10;
+  --square-rows: 5;
+}
+
+.landing-grid .square-inset .square-copy {
+  grid-column: 3 / -3;
+  grid-row: 2 / -2;
+  border-bottom: 0.5px solid var(--grid-line);
+}
+
+.landing-grid .square-side-column {
+  display: none;
+  pointer-events: none;
+}
+
+@media (min-width: 640px) {
+  .landing-grid .has-side-columns > .square-lattice::after {
+    inset-inline: var(--square-pitch);
+  }
+
+  .landing-grid .square-side-column {
+    position: absolute;
+    inset-block: 0;
+    display: block;
+    width: var(--square-pitch);
+  }
+
+  .landing-grid .square-side-column-start {
+    inset-inline-start: 0;
+  }
+
+  .landing-grid .square-side-column-end {
+    inset-inline-end: 0;
+  }
+
+  .landing-grid .square-side-column::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 50%;
+    border-top: 0.5px solid var(--grid-line);
+  }
+}
+
+@media (min-width: 800px) {
+  .landing-grid .square-copy {
+    padding: 20px;
+  }
+
+  .landing-grid .square-copy > div {
+    gap: 18px;
+  }
+
+  .landing-grid .square-copy h1 {
+    max-width: 640px;
+    font-size: clamp(40px, 4.2vw, 56px);
+    line-height: 1.08;
+  }
+
+  .landing-grid .square-copy > div > p {
+    max-width: 480px;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+@media (min-width: 800px) and (max-width: 1023px) {
+  .landing-grid .square-inset {
+    --square-rows: 6;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 799px) {
+  .landing-grid .square-inset {
+    --square-columns: 8;
+    --square-rows: 6;
+  }
+  .landing-grid .square-inset .square-copy {
+    grid-column: 2 / -2;
+  }
+  .landing-grid .square-copy > div {
+    gap: 18px;
+  }
+}
+
+@media (max-width: 639px) {
+  .landing-grid .rail-header-row {
+    height: 64px;
+  }
+
+  .landing-grid .square-lattice,
+  .landing-grid :where(.square-copy) > .grid-cross {
+    display: none;
+  }
+
+  .landing-grid .square-grid {
+    display: block;
+  }
+
+  .landing-grid .square-inset .square-copy {
+    border: 0;
+    padding: 48px 24px 40px;
+  }
+
+  .landing-grid .square-copy h1 {
+    max-width: 400px;
+    font-size: clamp(32px, 9vw, 40px);
+    line-height: 1.1;
+  }
+
+  .landing-grid .square-copy > div > p {
+    max-width: 30ch;
+  }
+
+  .landing-grid .product-preview-framing {
+    position: relative;
+    height: 358px;
+    overflow: hidden;
+    padding: 16px;
+  }
+
+  .landing-grid .product-preview-window {
+    width: 1168px;
+    transform: scale(0.5);
+    transform-origin: top left;
+  }
+
+  .landing-grid .product-preview-framing::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    right: 0;
+    width: 40px;
+    background: linear-gradient(to right, transparent, oklch(var(--neutral-50)));
+    pointer-events: none;
+  }
+}
+
+.landing-grid .grid-rule,
+.landing-grid > footer {
+  position: relative;
+}
+
+.landing-grid .grid-rule::before,
+.landing-grid > footer::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  border-top: 0.5px solid var(--grid-line);
+  pointer-events: none;
+}
+
+.landing-grid .grid-cross {
+  --cross-ink: oklch(var(--neutral-400) / 0.7);
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  margin: -6px;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--cross-ink), var(--cross-ink)) center / 0.5px 13px no-repeat,
+    linear-gradient(var(--cross-ink), var(--cross-ink)) center / 13px 0.5px no-repeat;
+}
+
+.landing-grid .grid-hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    oklch(var(--neutral-250) / 0.38) 5px 5.5px,
+    transparent 5.5px 8px
+  );
+}
+
+.landing-grid .grid-faq #faqs {
+  display: grid;
+  border: 0;
+  scroll-margin-top: 96px;
+}
+
+.landing-grid .grid-faq #faqs > div {
+  padding: 32px 24px;
+  border: 0;
+  min-width: 0;
+}
+
+.landing-grid .grid-faq #faqs > div:first-child {
+  border-bottom: 0.5px solid var(--grid-line);
+}
+
+.landing-grid .grid-faq #faqs > div:first-child > div > div:first-child {
+  display: none;
+}
+
+.landing-grid .grid-faq #faqs > div:first-child h2 {
+  text-align: start;
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.landing-grid .grid-faq #faqs > div:first-child p {
+  text-align: start;
+  font-size: 14px;
+  line-height: 1.65;
+  margin-top: 12px;
+}
+
+.landing-grid .grid-faq #faqs > div:last-child > div {
+  padding-bottom: 0;
+  max-width: none;
+}
+.landing-grid .grid-faq #faqs > div:last-child > div > div {
+  border-color: var(--grid-line);
+}
+.landing-grid .grid-faq #faqs > div:last-child > div > div:first-child {
+  padding-top: 0;
+}
+.landing-grid .grid-faq #faqs > div:last-child > div > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.landing-grid .grid-faq button > span:first-child {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  .landing-grid .grid-faq #faqs {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  }
+  .landing-grid .grid-faq #faqs > div {
+    padding: 40px 32px;
+  }
+  .landing-grid .grid-faq #faqs > div:first-child {
+    border-bottom: 0;
+    border-right: 0.5px solid var(--grid-line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-grid a {
+    transition: none;
+  }
+
+  .landing-grid a:active {
+    scale: 1;
+  }
+}

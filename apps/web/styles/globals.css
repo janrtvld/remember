@@ -1,0 +1,300 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+@layer base {
+  :where(a[href], button:not(:disabled), [role="tab"], [role="button"]) {
+    cursor: pointer;
+  }
+}
+
+:root {
+  color-scheme: light;
+  --canvas: 0.984 0.002 255;
+  --surface: 1 0 0;
+  --selected-surface: 1 0 0;
+  --contrast: 0.129 0.016 255;
+  --modal-backdrop: 0 0 0 / 0.2;
+  --modal-enter-duration: 200ms;
+  --modal-exit-duration: 100ms;
+  --on-accent: 1 0 0;
+  --on-brand: 1 0 0;
+  --on-danger: 1 0 0;
+  --switch-track: var(--neutral-200);
+  --switch-thumb: var(--surface);
+  --switch-thumb-checked: var(--surface);
+  --switch-thumb-ring: var(--neutral-200);
+  --blue-0: 1 0 0;
+  --blue-100: 0.9732 0.0131 251.557;
+  --blue-200: 0.9629 0.0182 250.588;
+  --blue-300: 0.9458 0.0269 249.849;
+  --blue-400: 0.9158 0.0436 245.116;
+  --blue-500: 0.8269 0.0909 248.017;
+  --blue-600: 0.7301 0.1473 247.731;
+  --blue-700: 0.5763 0.2195 258.626;
+  --blue-800: 0.518 0.207 259.613;
+  --blue-900: 0.5351 0.2074 259.001;
+  --blue-1000: 0.269 0.0949 256.851;
+  --brand-gradient-end: 0.518 0.207 259.613;
+  --brand-gradient: linear-gradient(to bottom right, oklch(var(--blue-700)), oklch(var(--brand-gradient-end)));
+  --categorical-grey: 0.554 0.018 255; /* Tailwind slate-500 */
+  --categorical-purple: 0.5674 0.1585 275.21; /* Linear #5e6ad2 */
+  --categorical-teal: 0.7129 0.1175 213.03; /* Linear #26b5ce */
+  --categorical-green: 0.7029 0.1267 158.89; /* Linear #4cb782 */
+  --categorical-yellow: 0.8247 0.1685 89.96; /* Linear #f0bf00 */
+  --categorical-orange: 0.728 0.1405 59.03; /* Linear #e78f41 */
+  --categorical-pink: 0.7284 0.0539 28.82; /* Linear #c79b94 */
+  --categorical-red: 0.6534 0.1835 23.68; /* Linear #eb5757 */
+  --categorical-blue: 0.7301 0.1473 247.731; /* Geist blue-600 */
+  --neutral-50: 0.984 0.002 255;
+  --neutral-100: 0.968 0.004 255;
+  --neutral-200: 0.929 0.008 255;
+  --neutral-300: 0.869 0.012 255;
+  --neutral-400: 0.711 0.016 255;
+  --neutral-500: 0.554 0.018 255;
+  --neutral-600: 0.446 0.016 255;
+  --neutral-700: 0.372 0.016 255;
+  --neutral-800: 0.279 0.015 255;
+  --neutral-900: 0.208 0.016 255;
+  --neutral-950: 0.129 0.016 255;
+  /* Linear semantic hues, converted from the active LCH theme to sRGB-safe OKLCH ramps. */
+  --success-100: 0.913 0.018 147;
+  --success-200: 0.706 0.176 147;
+  --success-500: 0.637 0.175 147;
+  --success-700: 0.491 0.144 147;
+  --warning-100: 0.929 0.021 91;
+  --warning-200: 0.824 0.169 91;
+  --warning-500: 0.755 0.155 91;
+  --warning-700: 0.507 0.104 91;
+  --danger-100: 0.915 0.024 23;
+  --danger-200: 0.908 0.035 23;
+  --danger-500: 0.589 0.219 23;
+  --danger-700: 0.526 0.2 22;
+  --info-100: 0.914 0.016 207;
+  --info-200: 0.71 0.122 207;
+  --info-500: 0.641 0.11 207;
+  --info-700: 0.499 0.085 207;
+  --shadow-softer: 0 4px 4px 0 oklch(0.208 0.016 255 / 0.04);
+  --shadow-soft: 0 10px 40px -12px oklch(0.129 0.016 255 / 0.1), 0 2px 6px oklch(0.129 0.016 255 / 0.03);
+  --shadow-hard: 0 0 0 1px oklch(0.129 0.016 255 / 0.08), 0 18px 50px -16px oklch(0.129 0.016 255 / 0.22);
+  --shadow-raised:
+    0 0 0 1px oklch(0.129 0.016 255 / 0.05), 0 1px 3px oklch(0.129 0.016 255 / 0.05),
+    0 4px 10px -4px oklch(0.129 0.016 255 / 0.05);
+  --shadow-raised-hover:
+    0 0 0 1px oklch(0.129 0.016 255 / 0.07), 0 1px 3px oklch(0.129 0.016 255 / 0.07),
+    0 4px 10px -4px oklch(0.129 0.016 255 / 0.08);
+  --shadow-shell: 1px 2px 4px -1px oklch(0.129 0.016 255 / 0.06);
+  --shadow-inset: inset 0 0 0 1px oklch(var(--contrast) / 0.05);
+}
+
+@media (color-gamut: p3) {
+  :root {
+    --blue-100: 0.9732 0.0141 251.56;
+    --blue-200: 0.9629 0.0195 250.59;
+    --blue-300: 0.9458 0.0293 249.849;
+    --blue-400: 0.9158 0.0473 245.116;
+    --blue-500: 0.8275 0.0979 248.48;
+    --blue-600: 0.7308 0.1583 248.133;
+    --blue-700: 0.5761 0.2508 258.23;
+    --blue-800: 0.5151 0.2399 257.85;
+    --brand-gradient-end: 0.5151 0.2399 257.85;
+    --blue-900: 0.5318 0.2399 256.99;
+    --blue-1000: 0.2667 0.1099 254.34;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --canvas: 0.13 0 0;
+    --surface: 0.18 0 0;
+    --selected-surface: 0.285 0 0;
+    --contrast: 0.985 0 0;
+    --modal-backdrop: 0 0 0 / 0.5;
+    --on-accent: 0.13 0 0;
+    --switch-track: var(--neutral-100);
+    --switch-thumb: var(--neutral-700);
+    --switch-thumb-checked: var(--blue-900);
+    --switch-thumb-ring: var(--neutral-800);
+    --neutral-50: 0.215 0 0;
+    --neutral-100: 0.245 0 0;
+    --neutral-200: 0.305 0 0;
+    --neutral-300: 0.405 0 0;
+    --neutral-400: 0.64 0 0;
+    --neutral-500: 0.72 0 0;
+    --neutral-600: 0.78 0 0;
+    --neutral-700: 0.84 0 0;
+    --neutral-800: 0.91 0 0;
+    --neutral-900: 0.955 0 0;
+    --neutral-950: 0.985 0 0;
+    --blue-0: 0.13 0 0;
+    --blue-100: 0.245 0.045 258;
+    --blue-200: 0.315 0.065 258;
+    --blue-300: 0.405 0.09 258;
+    --blue-400: 0.52 0.125 258;
+    --blue-500: 0.63 0.16 258;
+    --blue-600: 0.69 0.16 258;
+    --blue-800: 0.79 0.103 258;
+    --blue-900: 0.84 0.077 258;
+    --blue-1000: 0.9 0.047 258;
+    --success-100: 0.245 0.035 147;
+    --success-200: 0.36 0.07 147;
+    --success-500: 0.7 0.13 147;
+    --success-700: 0.78 0.12 147;
+    --warning-100: 0.245 0.03 91;
+    --warning-200: 0.36 0.06 91;
+    --warning-500: 0.72 0.13 91;
+    --warning-700: 0.82 0.12 91;
+    --danger-100: 0.245 0.035 23;
+    --danger-200: 0.35 0.06 23;
+    --danger-500: 0.589 0.219 23;
+    --danger-700: 0.526 0.2 22;
+    --info-100: 0.245 0.03 207;
+    --info-200: 0.36 0.055 207;
+    --info-500: 0.7 0.11 207;
+    --info-700: 0.79 0.1 207;
+    --shadow-softer: 0 0 0 1px oklch(1 0 0 / 0.09);
+    --shadow-soft: 0 0 0 1px oklch(1 0 0 / 0.09);
+    --shadow-hard: 0 0 0 1px oklch(1 0 0 / 0.12);
+    --shadow-raised: 0 0 0 1px oklch(1 0 0 / 0.09);
+    --shadow-raised-hover: 0 0 0 1px oklch(1 0 0 / 0.14);
+    --shadow-shell: 0 0 0 1px oklch(1 0 0 / 0.09);
+  }
+}
+
+@layer components {
+  .bg-brand-gradient {
+    background-image: var(--brand-gradient);
+  }
+  .text-brand-gradient {
+    background-image: var(--brand-gradient);
+    @apply bg-clip-text text-transparent;
+  }
+
+  .wiki-markdown-editor p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    @apply pointer-events-none float-left h-0 text-slate-400;
+  }
+}
+
+/* Keep semantic Markdown colors after the typography plugin's utility defaults. */
+@layer utilities {
+  .prose-slate {
+    --tw-prose-body: oklch(var(--neutral-700));
+    --tw-prose-headings: oklch(var(--neutral-950));
+    --tw-prose-lead: oklch(var(--neutral-600));
+    --tw-prose-links: oklch(var(--blue-700));
+    --tw-prose-bold: oklch(var(--neutral-900));
+    --tw-prose-counters: oklch(var(--neutral-500));
+    --tw-prose-bullets: oklch(var(--neutral-400));
+    --tw-prose-hr: oklch(var(--neutral-200));
+    --tw-prose-quotes: oklch(var(--neutral-800));
+    --tw-prose-quote-borders: oklch(var(--neutral-300));
+    --tw-prose-captions: oklch(var(--neutral-500));
+    --tw-prose-code: oklch(var(--neutral-800));
+    --tw-prose-pre-code: oklch(var(--neutral-100));
+    --tw-prose-pre-bg: oklch(var(--neutral-900));
+    --tw-prose-th-borders: oklch(var(--neutral-300));
+    --tw-prose-td-borders: oklch(var(--neutral-200));
+  }
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: oklch(var(--canvas));
+  color: oklch(var(--neutral-800));
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 400;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+:where(*, ::before, ::after) {
+  --tw-ring-offset-color: oklch(var(--surface));
+}
+
+::selection {
+  @apply bg-blue-200 text-blue-900;
+}
+
+.custom-scrollbar {
+  scrollbar-gutter: stable;
+}
+
+.custom-scrollbar.custom-scrollbar-auto-gutter {
+  scrollbar-gutter: auto;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 15px;
+  background-color: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  border: 4px solid transparent;
+  border-radius: 20px;
+  background-color: oklch(var(--neutral-300));
+  background-clip: content-box;
+}
+
+.inbox-detail-scrollbar::-webkit-scrollbar-track {
+  margin-bottom: 7rem;
+}
+
+.compact-scrollbar {
+  scrollbar-color: oklch(var(--neutral-300)) transparent;
+  scrollbar-width: thin;
+}
+
+.compact-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.compact-scrollbar::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.compact-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background-color: oklch(var(--neutral-300));
+}
+
+.compact-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(var(--neutral-400));
+}
+
+.app-drag {
+  -webkit-app-region: drag;
+}
+
+.app-drag :where(a, button, input, select, textarea, [contenteditable="true"], [role="button"], [role="tab"]),
+.app-drag :where(a, button, input, select, textarea, [contenteditable="true"], [role="button"], [role="tab"]) *,
+.app-drag :where(a, button, [role="button"], [role="tab"])::before,
+.app-drag :where(a, button, [role="button"], [role="tab"])::after {
+  -webkit-app-region: no-drag;
+}
+
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+html:has(.permission-guide-root),
+body:has(.permission-guide-root) {
+  overflow: hidden;
+  background: transparent;
+}

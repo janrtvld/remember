@@ -1,0 +1,400 @@
+{
+  "version": "source-provenance.v1",
+  "experiment": "E03.7",
+  "authoredBeforeExecution": true,
+  "scope": "Isolated synthetic EvidenceStore/SQLite audit; no capture, app launch, provider call or real profile access.",
+  "crossCaseProjectionEquality": {
+    "reference": "SP-01-missing",
+    "beforeEqual": [
+      "SP-02-explicit-false",
+      "SP-04-unlinked-positive",
+      "SP-05-linked-no-overlap",
+      "SP-06-unbound-call",
+      "SP-07-unbound-context",
+      "SP-08-text-change",
+      "SP-09-late-positive",
+      "SP-10-time-freshness",
+      "SP-11-chunk-binding-change"
+    ],
+    "afterEqual": [
+      "SP-02-explicit-false",
+      "SP-04-unlinked-positive",
+      "SP-05-linked-no-overlap",
+      "SP-06-unbound-call",
+      "SP-07-unbound-context",
+      "SP-11-chunk-binding-change"
+    ]
+  },
+  "limits": [
+    "MediaPlaybackContext has no snapshot observation time; stale global snapshot age cannot be expressed honestly by inventing a timestamp field.",
+    "Audio chunk source and time overlap are stored; no positive assertion that each word came from the globally reported application is available.",
+    "A present resolver projection is not live provenance or permission to assign/execute a personal action.",
+    "Explicit false and missing playback metadata remain separate stored observations, even when their resolver projections are equal.",
+    "The audit invokes existing getters only. No worker, classifier, task generator or new product authorization gate is implemented.",
+    "Store close/reopen is storage persistence evidence, not process or native-app restart evidence.",
+    "Expected observation matches are not semantic accuracy or authorization passes."
+  ],
+  "syntheticTruth": {
+    "nativeOrigin": "unknown",
+    "speakerIdentity": "unknown",
+    "authorization": "not_established_by_this_audit"
+  },
+  "common": {
+    "session": {
+      "id": "synthetic-source-provenance-day",
+      "startedAt": 1792652340000,
+      "endedAt": null,
+      "activeDurationMs": 0,
+      "moments": [],
+      "contextMoments": [],
+      "appActivity": [],
+      "memory": null,
+      "refresh": {
+        "status": "idle",
+        "reason": null,
+        "targetThrough": null,
+        "error": null,
+        "progress": null,
+        "run": null
+      }
+    },
+    "audio": {
+      "primary": {
+        "id": "synthetic-chunk-primary",
+        "sessionId": "synthetic-source-provenance-day",
+        "source": "system",
+        "startedAt": 1792652400000,
+        "durationMs": 10000,
+        "status": "ready",
+        "transcript": "Jan, wil jij Noor de planning mailen?",
+        "captureOutcome": "transcribed"
+      },
+      "secondary": {
+        "id": "synthetic-chunk-secondary",
+        "sessionId": "synthetic-source-provenance-day",
+        "source": "system",
+        "startedAt": 1792652400000,
+        "durationMs": 10000,
+        "status": "ready",
+        "transcript": "Jan, wil jij Noor de planning mailen?",
+        "captureOutcome": "transcribed"
+      }
+    },
+    "speech": {
+      "id": "synthetic-speech",
+      "workdayId": "synthetic-source-provenance-day",
+      "chunkId": "synthetic-chunk-primary",
+      "chunkIds": ["synthetic-chunk-primary"],
+      "source": "system",
+      "startedAt": 1792652401000,
+      "endedAt": 1792652409000,
+      "text": "Jan, wil jij Noor de planning mailen?",
+      "detectedLanguage": "nl",
+      "acceptedLanguage": "nl",
+      "rejectionReason": null,
+      "transcriptionOutcome": "transcribed"
+    },
+    "expected": {
+      "resolveSource": "present",
+      "resolveSavedRef": "present",
+      "projectionEqualsBefore": true,
+      "savedResolutionEqualsBefore": true,
+      "latestObservedAtMatchesStoredEnd": true,
+      "savedObservedAtMatchesStoredEnd": true
+    }
+  },
+  "cases": [
+    {
+      "id": "SP-01-missing",
+      "title": "No stored playback snapshot",
+      "setup": {
+        "audio": {
+          "primary": {}
+        }
+      },
+      "reachability": "supported storage APIs only",
+      "interpretation": "Projection exists with no playback metadata. Missing metadata does not establish live speech, a speaker identity or permission."
+    },
+    {
+      "id": "SP-02-explicit-false",
+      "title": "Explicit false playback snapshot in fixture",
+      "setup": {
+        "audio": {
+          "primary": {
+            "mediaPlayback": {
+              "isPlaying": false,
+              "applicationName": "Synthetic Media Player",
+              "bundleIdentifier": "example.synthetic.player"
+            }
+          }
+        }
+      },
+      "reachability": "Storage API accepts false, but current handleChunk producer persists only positive playback; this is not a claim that the native path stores explicit false.",
+      "interpretation": "False is distinguishable from missing in SQLite but not in the speech projection. It is a global fixture snapshot, not proof that these words are live."
+    },
+    {
+      "id": "SP-03-linked-positive",
+      "title": "Positive playback on exact overlapping primary chunk",
+      "setup": {
+        "audio": {
+          "primary": {
+            "mediaPlayback": {
+              "isPlaying": true,
+              "applicationName": "Synthetic Media Player",
+              "bundleIdentifier": "example.synthetic.player"
+            }
+          }
+        }
+      },
+      "expectedBefore": {
+        "resolveSource": "null",
+        "resolveSavedRef": "null",
+        "latestObservedAtMatchesStoredEnd": null,
+        "savedObservedAtMatchesStoredEnd": null
+      },
+      "reachability": "supported storage APIs only",
+      "interpretation": "Existing resolver suppresses this speech source because the linked same-source chunk overlaps and records positive playback. This is a conservative guard, not attribution of each spoken word to that application."
+    },
+    {
+      "id": "SP-04-unlinked-positive",
+      "title": "Positive playback on another simultaneous unlinked chunk",
+      "setup": {
+        "audio": {
+          "primary": {},
+          "secondary": {
+            "mediaPlayback": {
+              "isPlaying": true,
+              "applicationName": "Synthetic Media Player",
+              "bundleIdentifier": "example.synthetic.player"
+            }
+          }
+        }
+      },
+      "reachability": "supported storage APIs only",
+      "interpretation": "Unlinked simultaneous positive playback does not suppress this source. Projection equality cannot prove that the speech was independent of that playback."
+    },
+    {
+      "id": "SP-05-linked-no-overlap",
+      "title": "Linked positive chunk outside speech interval",
+      "setup": {
+        "audio": {
+          "primary": {},
+          "secondary": {
+            "startedAt": 1792652420000,
+            "mediaPlayback": {
+              "isPlaying": true,
+              "applicationName": "Synthetic Media Player",
+              "bundleIdentifier": "example.synthetic.player"
+            }
+          }
+        },
+        "speechPatch": {
+          "chunkIds": ["synthetic-chunk-primary", "synthetic-chunk-secondary"]
+        }
+      },
+      "reachability": "supported storage APIs only",
+      "interpretation": "Only a linked overlapping chunk triggers the existing playback guard. The non-overlapping positive metadata remains in SQLite and is not projected as speech provenance."
+    },
+    {
+      "id": "SP-06-unbound-call",
+      "title": "Active call signal with no audio binding",
+      "setup": {
+        "audio": {
+          "primary": {}
+        },
+        "calls": [
+          {
+            "id": "synthetic-call",
+            "workdayId": "synthetic-source-provenance-day",
+            "provider": "synthetic-call-provider",
+            "surfaceKey": "synthetic:call",
+            "state": "active",
+            "observedAt": 1792652403000
+          }
+        ]
+      },
+      "reachability": "supported storage APIs only",
+      "interpretation": "A call surface observation has no chunk/speaker binding and does not appear in this speech projection. It does not establish that these words came from the call."
+    },
+    {
+      "id": "SP-07-unbound-context",
+      "title": "Simultaneous media screen context with no audio binding",
+      "setup": {
+        "audio": {
+          "primary": {}
+        },
+        "context": [
+          {
+            "moment": {
+              "id": "synthetic-media-context",
+              "timestamp": 1792652404000,
+              "text": "Synthetic training video: a presenter discusses a planning email.",
+              "appName": "Synthetic Media Player",
+              "windowTitle": "Synthetic training video",
+              "textSource": "accessibility",
+              "trigger": "content-change",
+              "monitorName": "synthetic-monitor",
+              "screenshotPath": ""
+            },
+            "bundleId": "example.synthetic.player"
+          }
+        ]
+      },
+      "reachability": "supported storage APIs only",
+      "interpretation": "The media screen row is independently stored. Coincident screen text does not bind this speech to a player or to live work; the direct speech projection is unchanged."
+    },
+    {
+      "id": "SP-08-text-change",
+      "title": "Transcript changes after reference was saved",
+      "setup": {
+        "audio": {
+          "primary": {}
+        }
+      },
+      "steps": [
+        {
+          "name": "after-text-upsert",
+          "kind": "upsert-speech",
+          "patch": {
+            "text": "Jan, wil jij Noor de gewijzigde planning mailen?"
+          },
+          "expectedStoredSpeechPatch": {
+            "text": "Jan, wil jij Noor de gewijzigde planning mailen?"
+          },
+          "expected": {
+            "resolveSavedRef": "null",
+            "projectionEqualsBefore": false,
+            "savedResolutionEqualsBefore": false,
+            "savedObservedAtMatchesStoredEnd": null
+          }
+        }
+      ],
+      "reachability": "supported storage APIs only",
+      "interpretation": "Text-derived revision changes and the saved reference is rejected. This proves text freshness for this synthetic update, not freshness of every metadata field."
+    },
+    {
+      "id": "SP-09-late-positive",
+      "title": "Playback becomes positive after first resolution",
+      "setup": {
+        "audio": {
+          "primary": {}
+        }
+      },
+      "steps": [
+        {
+          "name": "after-playback-upsert",
+          "kind": "upsert-audio",
+          "audioKey": "primary",
+          "patch": {
+            "mediaPlayback": {
+              "isPlaying": true,
+              "applicationName": "Synthetic Media Player",
+              "bundleIdentifier": "example.synthetic.player"
+            }
+          },
+          "expected": {
+            "resolveSource": "null",
+            "resolveSavedRef": "null",
+            "projectionEqualsBefore": false,
+            "savedResolutionEqualsBefore": false,
+            "latestObservedAtMatchesStoredEnd": null,
+            "savedObservedAtMatchesStoredEnd": null
+          }
+        }
+      ],
+      "reachability": "supported storage APIs only",
+      "interpretation": "Both current and saved references are suppressed by fresh playback metadata even though the transcript hash is unchanged. No native timing-race reachability is claimed; the native producer awaits its snapshot before ASR."
+    },
+    {
+      "id": "SP-10-time-freshness",
+      "title": "Supported upsert preserves timing, then isolated raw time corruption",
+      "setup": {
+        "audio": {
+          "primary": {},
+          "secondary": {}
+        }
+      },
+      "steps": [
+        {
+          "name": "after-supported-time-attempt",
+          "kind": "upsert-speech",
+          "patch": {
+            "chunkId": "synthetic-chunk-secondary",
+            "source": "microphone",
+            "startedAt": 1792652421000,
+            "endedAt": 1792652429000
+          }
+        },
+        {
+          "name": "after-adversarial-time-mutation",
+          "kind": "adversarial-sql-times",
+          "startedAt": 1792652421000,
+          "endedAt": 1792652429000,
+          "scope": "Storage-corruption/adversarial-only. This UPDATE is not a native or supported EvidenceStore update path.",
+          "expectedStoredSpeechPatch": {
+            "started_at": 1792652421000,
+            "ended_at": 1792652429000
+          },
+          "expected": {
+            "projectionEqualsBefore": false,
+            "savedObservedAtMatchesStoredEnd": false
+          }
+        }
+      ],
+      "reachability": "Two separate paths: actual supported upsert first; raw SQL time corruption second, explicitly adversarial and not native reachability.",
+      "interpretation": "Supported appendSpeechSegments conflict update preserves started_at, ended_at, source and primary chunk. Raw SQL demonstrates that a saved text-hash reference can still resolve with its old observedAt after stored times change; this is a stricter freshness limit, not an observed native product bug."
+    },
+    {
+      "id": "SP-11-chunk-binding-change",
+      "title": "Supported chunkIds extension with same transcript",
+      "setup": {
+        "audio": {
+          "primary": {},
+          "secondary": {}
+        }
+      },
+      "steps": [
+        {
+          "name": "after-chunk-link-upsert",
+          "kind": "upsert-speech",
+          "patch": {
+            "chunkIds": ["synthetic-chunk-primary", "synthetic-chunk-secondary"]
+          },
+          "expectedStoredSpeechPatch": {
+            "chunk_ids_json": "[\"synthetic-chunk-primary\",\"synthetic-chunk-secondary\"]"
+          }
+        }
+      ],
+      "reachability": "Supported appendSpeechSegments conflict update replaces chunk_ids_json. This audit does not establish when native ASR reuses an identical speech ID in this way.",
+      "interpretation": "The linked chunk set changes through the supported store API, but current projection, text revision and saved-reference resolution stay identical. A stricter complete-source freshness test is not covered by this text-only reference."
+    },
+    {
+      "id": "SP-12-multi-chunk-positive",
+      "title": "Multi-chunk speech with one positive overlapping chunk",
+      "setup": {
+        "audio": {
+          "primary": {},
+          "secondary": {
+            "startedAt": 1792652405000,
+            "mediaPlayback": {
+              "isPlaying": true,
+              "applicationName": "Synthetic Media Player",
+              "bundleIdentifier": "example.synthetic.player"
+            }
+          }
+        },
+        "speechPatch": {
+          "chunkIds": ["synthetic-chunk-primary", "synthetic-chunk-secondary"]
+        }
+      },
+      "expectedBefore": {
+        "resolveSource": "null",
+        "resolveSavedRef": "null",
+        "latestObservedAtMatchesStoredEnd": null,
+        "savedObservedAtMatchesStoredEnd": null
+      },
+      "reachability": "supported storage APIs only",
+      "interpretation": "A positive overlapping secondary chunk is sufficient to suppress the multi-chunk source. The clean primary chunk does not override the existing guard."
+    }
+  ]
+}

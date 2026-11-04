@@ -1,0 +1,961 @@
+html:has(.edge-widget-root),
+body:has(.edge-widget-root) {
+  background: transparent;
+  overflow: hidden;
+}
+
+.edge-widget-root {
+  --widget-resting: #626266;
+  --widget-surface: #272729;
+  --widget-hover: #3a3a3d;
+  --widget-border: #ffffff26;
+  --widget-text: #f5f5f6;
+  --widget-subdued: #96969c;
+  --widget-dot: #3b82f6;
+  --widget-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  position: fixed;
+  inset: 0;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.edge-widget {
+  --widget-shift-x: 12px;
+  --widget-shift-y: 0px;
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  width: 18px;
+  height: 72px;
+  transform: translateY(-50%);
+}
+
+/* Include the gap to the screen edge in hover and native hit testing. */
+.edge-widget::before {
+  content: "";
+  position: absolute;
+  inset: 0 -2px 0 0;
+}
+
+.edge-widget[data-edge="left"]::before {
+  inset: 0 0 0 -2px;
+}
+
+.edge-widget[data-edge="bottom"]::before {
+  inset: 0 0 -8px 0;
+}
+
+/* Only the transparent hover corridor changes size; visible surfaces use transforms. */
+.edge-widget[data-expanded="true"] {
+  --widget-shift-x: 0px;
+  --widget-shift-y: 0px;
+  width: 44px;
+  height: 148px;
+}
+
+.edge-widget[data-dictating="true"] {
+  height: 160px;
+}
+
+.edge-widget-actions {
+  position: absolute;
+  right: 1px;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.edge-widget[data-expanded="true"] .edge-widget-actions {
+  pointer-events: auto;
+}
+
+.edge-widget-secondary {
+  opacity: 0;
+  transform: translateY(30px) scale(0.94);
+  transition:
+    opacity 120ms ease,
+    transform 160ms var(--widget-ease);
+}
+
+.edge-widget-conversation {
+  transform: translateY(-30px) scale(0.94);
+}
+
+.edge-widget[data-expanded="true"] .edge-widget-secondary {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-duration: 160ms, 200ms;
+  transition-delay: 30ms;
+}
+
+.edge-widget[data-dictating="true"] .edge-widget-secondary {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition-duration: 100ms, 140ms;
+  transition-delay: 0ms;
+}
+
+.edge-widget[data-dictating="true"] .edge-widget-conversation {
+  transform: translateY(-8px);
+}
+
+.edge-widget-action {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--widget-text);
+  cursor: pointer;
+}
+
+/* Keep the 32px discs fixed while trimming padding along the button stack. */
+.edge-widget-action::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid var(--widget-border);
+  border-radius: inherit;
+  background: var(--widget-surface);
+  box-shadow: 0 2px 6px #00000026;
+}
+
+.edge-widget-secondary {
+  height: 36px;
+}
+
+.edge-widget-secondary::before {
+  inset: 2px 4px;
+}
+
+.edge-widget-action::before,
+.edge-widget-action > svg {
+  transition: transform 120ms var(--widget-ease);
+}
+
+.edge-widget-action > svg {
+  position: relative;
+  width: 17px;
+  height: 17px;
+  pointer-events: none;
+}
+
+.edge-widget-action[data-subdued="true"],
+.edge-widget-action:disabled {
+  color: var(--widget-subdued);
+  cursor: default;
+}
+
+.edge-widget-action[data-recording="true"] {
+  color: #ffaaa5;
+}
+
+.edge-widget-action:focus-visible {
+  outline: none;
+}
+
+.edge-widget-action:focus-visible::before,
+.edge-widget-dictation-trigger:focus-visible {
+  outline: 2px solid var(--widget-text);
+  outline-offset: 3px;
+}
+
+.edge-widget-action:active:not(:disabled, [aria-disabled="true"])::before,
+.edge-widget-action:active:not(:disabled, [aria-disabled="true"]) > svg {
+  transform: scale(0.96);
+}
+
+.edge-widget-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--widget-dot);
+  pointer-events: none;
+}
+
+.edge-widget-recording-dot,
+.edge-widget-error-dot {
+  background: #ef4444;
+}
+
+.edge-widget-label {
+  position: absolute;
+  right: calc(100% + 4px);
+  margin: 0;
+  border: 1px solid var(--widget-border);
+  border-radius: 10px;
+  padding: 6px 9px;
+  background: var(--widget-surface);
+  color: var(--widget-text);
+  box-shadow: 0 2px 6px #0000001a;
+  font: 400 12px / 16px system-ui;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.edge-widget-label {
+  opacity: 0;
+  transform: translateX(4px);
+  transition:
+    opacity 100ms ease,
+    transform 140ms var(--widget-ease);
+}
+
+.edge-widget[data-error="true"] .edge-widget-action .edge-widget-label {
+  opacity: 0;
+}
+
+.edge-widget-action:focus-visible .edge-widget-label {
+  opacity: 1;
+  transform: none;
+}
+
+.edge-widget-spinner {
+  animation: spin 1s linear infinite;
+}
+
+.edge-widget-dictation {
+  --capsule-width: 32px;
+  --capsule-height: 144px;
+  --capsule-radius: calc(var(--capsule-width) / 2);
+  --capsule-travel: calc((var(--capsule-height) - var(--capsule-width)) / 2);
+  --capsule-control-offset: calc((var(--capsule-width) - 40px) / 2);
+  position: relative;
+  z-index: 1;
+  width: 40px;
+  height: 50px;
+}
+
+.edge-widget-dictation-trigger {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 72px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) translate(var(--widget-shift-x), var(--widget-shift-y));
+  transition:
+    opacity 100ms ease,
+    transform 180ms var(--widget-ease);
+}
+
+.edge-widget[data-expanded="true"] .edge-widget-dictation-trigger {
+  width: 40px;
+  height: 50px;
+  cursor: pointer;
+  transition-duration: 100ms, 240ms;
+}
+
+.edge-widget-dictation-trigger > svg {
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity 100ms ease,
+    transform 160ms var(--widget-ease);
+}
+
+.edge-widget[data-expanded="true"] .edge-widget-dictation-trigger > svg {
+  opacity: 1;
+  transform: scale(1);
+  transition-delay: 40ms;
+}
+
+.edge-widget-dictation-trigger::before {
+  display: none;
+}
+
+.edge-widget[data-dictating="true"] .edge-widget-dictation-trigger {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.edge-widget-capsule-surface,
+.edge-widget-capsule-controls {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--capsule-width);
+  height: var(--capsule-height);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.edge-widget-capsule-surface {
+  transform: translate(-50%, -50%) translate(var(--widget-shift-x), var(--widget-shift-y));
+  transition: transform 180ms var(--widget-ease);
+}
+
+.edge-widget[data-expanded="true"] .edge-widget-capsule-surface {
+  transition-duration: 240ms;
+}
+
+/* Rounded ends overlap the middle so fractional animation pixels cannot expose seams. */
+.edge-widget-capsule-surface span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  border: 1px solid var(--widget-border);
+  background: var(--widget-surface);
+  transition: transform 180ms var(--widget-ease);
+}
+
+.edge-widget[data-expanded="false"] .edge-widget-capsule-surface span {
+  background: var(--widget-resting);
+}
+
+.edge-widget-capsule-surface .edge-widget-capsule-top {
+  top: 0;
+  height: calc(var(--capsule-radius) + 2px);
+  border-bottom: 0;
+  border-radius: var(--capsule-radius) var(--capsule-radius) 0 0;
+  transform-origin: center var(--capsule-radius);
+  transform: translateY(40px) scale(0.25);
+}
+
+.edge-widget-capsule-surface .edge-widget-capsule-bottom {
+  bottom: 0;
+  height: calc(var(--capsule-radius) + 2px);
+  border-top: 0;
+  border-radius: 0 0 var(--capsule-radius) var(--capsule-radius);
+  transform-origin: center 2px;
+  transform: translateY(-40px) scale(0.25);
+}
+
+.edge-widget-capsule-surface .edge-widget-capsule-body {
+  top: var(--capsule-radius);
+  bottom: var(--capsule-radius);
+  border-block: 0;
+  transform: scale(0.25, 0.285714);
+}
+
+.edge-widget[data-expanded="true"] .edge-widget-capsule-top {
+  transform: translateY(48px) scale(1);
+}
+
+.edge-widget[data-expanded="true"] .edge-widget-capsule-bottom {
+  transform: translateY(-48px) scale(1);
+}
+
+.edge-widget[data-expanded="true"] .edge-widget-capsule-body {
+  transform: scaleY(0.142857);
+}
+
+.edge-widget[data-expanded="true"] .edge-widget-capsule-surface span {
+  transition-duration: 240ms;
+}
+
+.edge-widget[data-dictating="true"] .edge-widget-capsule-surface span {
+  background: #111112;
+  transform: translateY(0) scale(1);
+  transition-duration: 240ms;
+}
+
+.edge-widget-capsule-controls {
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+
+.edge-widget[data-dictating="true"] .edge-widget-capsule-controls {
+  opacity: 1;
+  pointer-events: auto;
+  transition-duration: 160ms;
+  transition-delay: 60ms;
+}
+
+.edge-widget-capsule-controls > button {
+  position: absolute;
+  left: var(--capsule-control-offset);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  color: var(--widget-text);
+  cursor: pointer;
+  transition: transform 180ms var(--widget-ease);
+}
+
+.edge-widget-capsule-controls > button::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: inherit;
+  background: #353535;
+  transition: transform 120ms var(--widget-ease);
+}
+
+.edge-widget-capsule-controls .edge-widget-capsule-finish::before {
+  background: #f5f5f6;
+}
+
+.edge-widget-capsule-cancel {
+  /* Button and capsule arcs share a center: 16px outer radius, 12px inner, 4px gap. */
+  top: var(--capsule-control-offset);
+  transform: translateY(var(--capsule-travel));
+}
+
+.edge-widget-capsule-controls .edge-widget-capsule-finish {
+  color: #171718;
+  bottom: var(--capsule-control-offset);
+  transform: translateY(calc(-1 * var(--capsule-travel)));
+}
+
+.edge-widget[data-dictating="true"] .edge-widget-capsule-controls > button {
+  transform: translateY(0);
+  transition-duration: 240ms;
+}
+
+.edge-widget-capsule-controls > button > svg {
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+
+.edge-widget-capsule-controls > button:disabled {
+  cursor: default;
+}
+
+.edge-widget-capsule-controls > button:disabled::before {
+  opacity: 0.3;
+}
+
+.edge-widget-capsule-controls > button:focus-visible {
+  outline: 2px solid var(--widget-text);
+  outline-offset: 0;
+}
+
+.edge-widget-capsule-controls > button:active:not(:disabled)::before {
+  transform: scale(0.96);
+}
+
+.edge-widget-capsule-activity {
+  position: absolute;
+  inset: 40px 0;
+  display: grid;
+  place-items: center;
+  color: var(--widget-text);
+  pointer-events: none;
+}
+
+.edge-widget-waveform {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+
+.edge-widget-waveform[data-visible="true"] {
+  opacity: 1;
+}
+
+.edge-widget-waveform-mark {
+  position: relative;
+  width: 12px;
+  height: 2px;
+}
+
+/* Translate the round tips separately so quiet speech remains round, even at dot size. */
+.edge-widget-waveform-mark::before,
+.edge-widget-waveform-mark::after,
+.edge-widget-waveform-fill {
+  position: absolute;
+  top: 0;
+  height: 2px;
+  background: var(--widget-text);
+  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1) var(--meter-delay);
+}
+
+.edge-widget-waveform-mark::before,
+.edge-widget-waveform-mark::after {
+  content: "";
+  left: 5px;
+  width: 2px;
+  border-radius: 50%;
+  transform: translateX(calc(-5px * var(--meter-expansion)));
+}
+
+.edge-widget-waveform-mark::after {
+  transform: translateX(calc(5px * var(--meter-expansion)));
+}
+
+.edge-widget-waveform-fill {
+  left: 1px;
+  width: 10px;
+  transform: scaleX(var(--meter-expansion));
+}
+
+.edge-widget-waveform[data-processing="true"] .edge-widget-waveform-mark::before {
+  animation: edge-widget-wave-start 900ms ease-in-out var(--wave-delay) infinite;
+}
+
+.edge-widget-waveform[data-processing="true"] .edge-widget-waveform-mark::after {
+  animation: edge-widget-wave-end 900ms ease-in-out var(--wave-delay) infinite;
+}
+
+.edge-widget-waveform[data-processing="true"] .edge-widget-waveform-fill {
+  animation: edge-widget-wave-fill 900ms ease-in-out var(--wave-delay) infinite;
+}
+
+@keyframes edge-widget-wave-start {
+  0%,
+  100% {
+    transform: translateX(-0.9px);
+  }
+  50% {
+    transform: translateX(calc(-5px * var(--wave-peak)));
+  }
+}
+
+@keyframes edge-widget-wave-end {
+  0%,
+  100% {
+    transform: translateX(0.9px);
+  }
+  50% {
+    transform: translateX(calc(5px * var(--wave-peak)));
+  }
+}
+
+@keyframes edge-widget-wave-fill {
+  0%,
+  100% {
+    transform: scaleX(0.18);
+  }
+  50% {
+    transform: scaleX(var(--wave-peak));
+  }
+}
+
+.edge-widget-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.edge-widget-dictation-status {
+  position: absolute;
+  right: calc(100% + 4px);
+  top: 50%;
+  display: flex;
+  align-items: center;
+  width: max-content;
+  max-width: calc(100vw - 76px);
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+  transition:
+    opacity 140ms ease,
+    transform 180ms var(--widget-ease);
+}
+
+@starting-style {
+  .edge-widget-dictation-status {
+    opacity: 0;
+    transform: translateY(-50%) translateX(8px);
+  }
+}
+
+/* Keep native pointer capture while crossing the small gap to feedback controls. */
+.edge-widget-dictation-status::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+}
+
+.edge-widget-dictation-controls {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .edge-widget-capsule-cancel:hover::before {
+    background: #49494b;
+  }
+
+  .edge-widget-capsule-finish:hover:not(:disabled)::before {
+    background: #ffffff;
+  }
+
+  .edge-widget[data-expanded="true"]
+    .edge-widget-dictation:has(.edge-widget-dictation-trigger:hover)
+    .edge-widget-capsule-surface
+    span {
+    background: var(--widget-hover);
+  }
+
+  .edge-widget-action:hover:not(:disabled, [aria-disabled="true"])::before {
+    background: var(--widget-hover);
+  }
+
+  .edge-widget[data-expanded="true"] .edge-widget-action:hover .edge-widget-label {
+    opacity: 1;
+    transform: none;
+    transition-delay: 80ms;
+  }
+}
+
+.edge-widget:has(:focus-visible) .edge-widget-actions,
+.edge-widget:has(:focus-visible) .edge-widget-secondary,
+.edge-widget:has(:focus-visible) .edge-widget-capsule-surface,
+.edge-widget:has(:focus-visible) .edge-widget-capsule-surface span,
+.edge-widget:has(:focus-visible) .edge-widget-capsule-controls,
+.edge-widget:has(:focus-visible) .edge-widget-capsule-controls > button,
+.edge-widget:has(:focus-visible) .edge-widget-dictation-trigger,
+.edge-widget:has(:focus-visible) .edge-widget-dictation-trigger > svg,
+.edge-widget-action:focus-visible .edge-widget-label {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge-widget-root .edge-widget[data-edge][data-expanded] *,
+  .edge-widget-root .edge-widget[data-edge][data-expanded] *::before,
+  .edge-widget-root .edge-widget[data-edge][data-expanded] *::after {
+    animation: none;
+    transition: none;
+  }
+}
+
+.edge-widget-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.edge-widget-root[data-docking="true"] .edge-widget {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.edge-widget[data-edge="left"] {
+  right: auto;
+  left: 2px;
+}
+
+.edge-widget[data-edge="left"][data-expanded="false"] {
+  --widget-shift-x: -12px;
+}
+
+.edge-widget[data-edge="left"] .edge-widget-actions {
+  right: auto;
+  left: 1px;
+}
+
+.edge-widget[data-edge="left"] .edge-widget-label,
+.edge-widget[data-edge="left"] .edge-widget-dictation-status {
+  right: auto;
+  left: calc(100% + 4px);
+}
+
+.edge-widget[data-edge="left"] .edge-widget-dictation-status::after {
+  left: auto;
+  right: 100%;
+}
+
+.edge-widget[data-edge="bottom"] {
+  right: auto;
+  left: 50%;
+  top: auto;
+  bottom: 8px;
+  width: 72px;
+  height: 18px;
+  transform: translateX(-50%);
+}
+
+.edge-widget[data-edge="bottom"][data-expanded="true"] {
+  width: 148px;
+  height: 44px;
+}
+
+.edge-widget[data-edge="bottom"][data-dictating="true"] {
+  width: 160px;
+}
+
+.edge-widget[data-edge="bottom"][data-expanded="false"] {
+  --widget-shift-x: 0px;
+  --widget-shift-y: 12px;
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-dictation {
+  width: 50px;
+  height: 40px;
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-dictation-trigger {
+  width: 72px;
+  height: 18px;
+}
+
+.edge-widget[data-edge="bottom"][data-expanded="true"] .edge-widget-dictation-trigger {
+  width: 50px;
+  height: 40px;
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-actions {
+  right: auto;
+  left: 50%;
+  top: auto;
+  bottom: 1px;
+  flex-direction: row;
+  transform: translateX(-50%);
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-secondary {
+  width: 36px;
+  height: 40px;
+  transform: translateX(30px) scale(0.94);
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-secondary::before {
+  inset: 4px 2px;
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-conversation {
+  transform: translateX(-30px) scale(0.94);
+}
+
+.edge-widget[data-edge="bottom"][data-expanded="true"] .edge-widget-secondary {
+  transform: translateX(0) scale(1);
+}
+
+.edge-widget[data-edge="bottom"][data-dictating="true"] .edge-widget-secondary {
+  transform: translateX(8px);
+}
+
+.edge-widget[data-edge="bottom"][data-dictating="true"] .edge-widget-conversation {
+  transform: translateX(-8px);
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-capsule-surface {
+  transform: translate(-50%, -50%) translate(var(--widget-shift-x), var(--widget-shift-y)) rotate(-90deg);
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-capsule-controls {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-capsule-controls > button > svg {
+  transform: rotate(90deg);
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-label {
+  right: auto;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%) translateY(4px);
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-action:focus-visible .edge-widget-label {
+  transform: translateX(-50%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .edge-widget[data-edge="bottom"] .edge-widget-action:hover .edge-widget-label {
+    transform: translateX(-50%);
+  }
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-dictation-status {
+  right: auto;
+  left: 50%;
+  top: auto;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%);
+}
+
+.edge-widget[data-edge="bottom"] .edge-widget-dictation-status::after {
+  left: 0;
+  right: 0;
+  top: 100%;
+  bottom: auto;
+  width: auto;
+  height: 5px;
+}
+
+.edge-widget-placement {
+  position: absolute;
+  inset: 0;
+  background: rgb(15 18 24 / 32%);
+  opacity: 0;
+  pointer-events: none;
+  cursor: grabbing;
+  transition: opacity 140ms ease-out;
+}
+
+.edge-widget-placement[data-visible="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transition-duration: 180ms;
+}
+
+.edge-widget-drop-target {
+  position: absolute;
+  top: 50%;
+  width: 88px;
+  height: 144px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  transform: translateY(-50%) scale(0.94);
+  cursor: grabbing;
+  transition: transform 180ms var(--widget-ease);
+}
+
+.edge-widget-drop-target::before,
+.edge-widget-drop-target::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: inherit;
+  background: rgb(255 255 255 / 27%);
+  box-shadow: 0 0 40px rgb(255 255 255 / 12%);
+}
+
+.edge-widget-drop-target::after {
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 0 48px rgb(255 255 255 / 32%);
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.edge-widget-drop-target[data-edge="left"] {
+  left: -38px;
+  transform-origin: left center;
+}
+.edge-widget-drop-target[data-edge="right"] {
+  right: -38px;
+  transform-origin: right center;
+}
+.edge-widget-drop-target[data-edge="bottom"] {
+  top: auto;
+  left: 50%;
+  bottom: -38px;
+  width: 144px;
+  height: 88px;
+  transform: translateX(-50%) scale(0.94);
+  transform-origin: center bottom;
+}
+
+.edge-widget-drop-target[data-selected="true"],
+.edge-widget-drop-target:focus-visible {
+  transform: translateY(-50%) scale(1);
+  outline: none;
+}
+
+.edge-widget-drop-target[data-edge="bottom"][data-selected="true"],
+.edge-widget-drop-target[data-edge="bottom"]:focus-visible {
+  transform: translateX(-50%) scale(1);
+}
+
+.edge-widget-drop-target[data-selected="true"]::after,
+.edge-widget-drop-target:focus-visible::after {
+  opacity: 1;
+}
+
+.edge-widget-drag-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.edge-widget-drag-bar {
+  position: absolute;
+  width: 8px;
+  height: 40px;
+  border: 1px solid var(--widget-border);
+  border-radius: 999px;
+  background: var(--widget-resting);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 25%);
+  transform: translate(-50%, -50%);
+  animation: edge-widget-drag-bar-exit 140ms ease-out both;
+}
+
+.edge-widget-drag-ghost[data-edge="bottom"] .edge-widget-drag-bar {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.edge-widget-drag-icon {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--widget-border);
+  border-radius: 50%;
+  background: #14120b;
+  box-shadow: 0 1px 5px rgb(0 0 0 / 24%);
+  transform: translate(-50%, -50%);
+  animation: edge-widget-drag-icon-enter 180ms var(--widget-ease) both;
+}
+
+.edge-widget-drag-icon::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  mask: url("/logo.svg") center / contain no-repeat;
+}
+
+@keyframes edge-widget-drag-bar-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes edge-widget-drag-icon-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge-widget-placement,
+  .edge-widget-placement[data-visible="true"],
+  .edge-widget-drop-target,
+  .edge-widget-drop-target::after {
+    transition: none;
+  }
+
+  .edge-widget-drag-bar,
+  .edge-widget-drag-icon {
+    animation: none;
+  }
+
+  .edge-widget-drag-bar {
+    opacity: 0;
+  }
+}
