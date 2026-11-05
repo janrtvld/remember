@@ -372,7 +372,6 @@ function LocalAppPreviewContent() {
   const [view, setView] = useState<View>('today')
   const [dayTab, setDayTab] = useState<DayTab>('overview')
   const [conversation, setConversation] = useState<number | null>(null)
-  const [searchOpen, setSearchOpen] = useState(false)
   const [activeWikiSpace, setActiveWikiSpace] = useState<PreviewWikiSpace>('personal')
   const [researchSpaceCreated, setResearchSpaceCreated] = useState(true)
   const [recordingState, setRecordingState] = useState<RecordingState>('idle')
@@ -396,7 +395,6 @@ function LocalAppPreviewContent() {
   function navigate(nextView: View) {
     setView(nextView)
     setConversation(null)
-    setSearchOpen(false)
   }
 
   function startRecording() {
@@ -444,7 +442,6 @@ function LocalAppPreviewContent() {
           setActiveWikiSpace('research')
           navigate('wiki')
         }}
-        onSearch={() => setSearchOpen(true)}
       />
       <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-slate-50 p-2 pl-0">
         <div className="flex h-full w-full flex-col overflow-hidden rounded-xl bg-white shadow-shell outline outline-1 -outline-offset-1 outline-black/[0.06]">
@@ -490,7 +487,6 @@ function LocalAppPreviewContent() {
           </div>
         </div>
       </div>
-      {searchOpen ? <PreviewSearch onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
       {recordingState === 'recording' ? (
         <RecordingOverlay
           paused={recordingPaused}
@@ -511,7 +507,6 @@ function PreviewSidebar({
   onNavigate,
   onWikiSpace,
   onNewSpace,
-  onSearch,
 }: {
   view: View
   activeWikiSpace: PreviewWikiSpace
@@ -519,7 +514,6 @@ function PreviewSidebar({
   onNavigate: (view: View) => void
   onWikiSpace: (space: PreviewWikiSpace) => void
   onNewSpace: () => void
-  onSearch: () => void
 }) {
   const { t } = usePreviewText()
   return (
@@ -542,7 +536,7 @@ function PreviewSidebar({
       </div>
       <div className="flex h-9 w-full items-center justify-between gap-2 pl-2.5">
         <Image src="/wordmark.svg" width={5108} height={710} alt="Remember" loading="eager" className="h-3 w-auto" />
-        <CompactButton label={t('Zoek', 'Search')} onClick={onSearch}>
+        <CompactButton label={t('Zoek', 'Search')} disabled>
           <IconMagnifyingGlass2 className="size-4" />
         </CompactButton>
       </div>
@@ -720,7 +714,7 @@ function CompactButton({
   size = 'default',
 }: {
   label: string
-  onClick: () => void
+  onClick?: () => void
   children: ReactNode
   disabled?: boolean
   size?: 'compact' | 'default'
@@ -1009,8 +1003,8 @@ function Overview() {
         <h3 className="text-lg font-semibold text-slate-950">{t('Overzicht', 'Overview')}</h3>
         <p className="mt-4 text-ui leading-6 text-slate-800">
           {t(
-            'De onboardingrefresh is inhoudelijk afgerond en blijft op koers voor donderdag. In de productsync is besloten de begeleide lege staat nu uit te rollen en uitgebreidere analytics pas na de eerste week te beoordelen. De terugknop blijft zichtbaar tijdens de toestemmingsstap en de succesboodschap verwijst naar het eerste dagoverzicht. Elena doet morgenochtend de laatste review. Sam werkt de rolloutnotitie bij met activatie en voltooiing als eerste meetpunten. De definitieve flow en de gedeelde uitleg voor support moeten nog worden gedeeld.',
-            'The onboarding refresh reached a useful milestone: the team reviewed the final flow and kept the release on track for Thursday. In the product sync, you agreed to ship the guided empty state now and evaluate deeper analytics after the first week. The back button stays visible during the permission step, and the success message points to the first daily overview. Elena will review the final flow tomorrow morning. Sam is updating the rollout note with activation and completion as the first metrics. The final flow and shared support copy still need to be sent.'
+            'Vandaag werkte je vooral aan de nieuwe onboarding. Je rondde de flow af en verwerkte feedback op de toestemmingsstap en de eerste dagweergave. Met het team sprak je af om donderdag te starten met de begeleide lege staat en na een week naar de eerste gebruikscijfers te kijken. Ook legde je de nieuwe uitleg voor support vast. De flow moet nog naar Elena voor haar laatste review morgenochtend.',
+            'Today you focused on the new onboarding. You finalized the flow and incorporated feedback on the permission step and first daily overview. With the team, you agreed to launch the guided empty state on Thursday and review the first usage metrics after a week. You also documented the updated support copy. The flow still needs to go to Elena for her final review tomorrow morning.'
           )}
         </p>
       </section>
@@ -1582,22 +1576,6 @@ function WikiView({ space }: { space: PreviewWikiSpace }) {
     setPages((current) => current.map((item) => (item.slug === nextPage.slug ? nextPage : item)))
   }
 
-  function deletePage() {
-    if (
-      !page ||
-      !window.confirm(
-        t(
-          `“${page.title || 'Naamloze pagina'}” verwijderen? Dit kan niet ongedaan worden gemaakt.`,
-          `Delete “${page.title || 'Untitled page'}”? This cannot be undone.`
-        )
-      )
-    ) {
-      return
-    }
-    setPages((current) => current.filter((item) => item.slug !== page.slug))
-    openHome()
-  }
-
   return (
     <>
       <WikiBreadcrumb
@@ -1608,7 +1586,6 @@ function WikiView({ space }: { space: PreviewWikiSpace }) {
         onHome={openHome}
         onCategory={openCategory}
         onCreatePage={category && !page ? createPage : undefined}
-        onDelete={deletePage}
       />
       <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
         {suggestionsOpen ? (
@@ -1653,7 +1630,6 @@ function WikiBreadcrumb({
   onHome,
   onCategory,
   onCreatePage,
-  onDelete,
 }: {
   space: PreviewWikiSpace
   spaceLabel: string
@@ -1662,7 +1638,6 @@ function WikiBreadcrumb({
   onHome: () => void
   onCategory: (slug: string) => void
   onCreatePage?: () => void
-  onDelete: () => void
 }) {
   const { t } = usePreviewText()
   const [actionsOpen, setActionsOpen] = useState(false)
@@ -1757,8 +1732,8 @@ function WikiBreadcrumb({
                 {page ? (
                   <button
                     type="button"
-                    onClick={() => runAction(onDelete)}
-                    className="flex h-8 w-full items-center gap-2 rounded-lg px-2.5 text-left font-medium text-danger-700 text-sm outline-none hover:bg-danger-100 focus-visible:ring-2 focus-visible:ring-danger-200"
+                    disabled
+                    className="flex h-8 w-full items-center gap-2 rounded-lg px-2.5 text-left font-medium text-danger-700 text-sm outline-none hover:bg-danger-100 focus-visible:ring-2 focus-visible:ring-danger-200 disabled:pointer-events-none disabled:opacity-50"
                   >
                     <IconTrashCanSimple className="size-3.5" />
                     {t('Pagina verwijderen', 'Delete page')}
@@ -1947,7 +1922,6 @@ function AgentView() {
   const [claudeModel, setClaudeModel] = useState('sonnet')
   const [effort, setEffort] = useState('high')
   const [automaticRefresh, setAutomaticRefresh] = useState(true)
-  const [selectedTrace, setSelectedTrace] = useState<number | null>(null)
   const [visibleTraceCount, setVisibleTraceCount] = useState(5)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [connected, setConnected] = useState(true)
@@ -2116,7 +2090,7 @@ function AgentView() {
           </h2>
         </div>
         <ol className="divide-y divide-slate-100">
-          {traces.slice(0, visibleTraceCount).map(([title, time, detail], index) => (
+          {traces.slice(0, visibleTraceCount).map(([title, time, detail]) => (
             <li key={title} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 px-4 py-3.5">
               <span className="mt-0.5 grid size-3.5 place-items-center rounded-full bg-emerald-500 text-white">
                 <IconCheckmark1Small className="size-3" />
@@ -2133,9 +2107,9 @@ function AgentView() {
                 </time>
                 <button
                   type="button"
-                  onClick={() => setSelectedTrace(index)}
+                  disabled
                   aria-label={t('Bekijk details', 'View details')}
-                  className="flex size-6 items-center justify-center rounded-md text-slate-400 outline-none hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+                  className="flex size-6 items-center justify-center rounded-md text-slate-400 outline-none hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400 disabled:pointer-events-none disabled:text-slate-300"
                 >
                   <IconDotGrid1x3HorizontalTight className="size-3" />
                 </button>
@@ -2158,53 +2132,6 @@ function AgentView() {
           </footer>
         ) : null}
       </section>
-
-      {selectedTrace !== null ? (
-        <div
-          className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/20 p-4 backdrop-blur-[1px]"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setSelectedTrace(null)
-          }}
-        >
-          <dialog open className="m-0 w-full max-w-lg overflow-hidden rounded-xl bg-white p-0 shadow-raised">
-            <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-4 py-3.5">
-              <div>
-                <h2 className="text-md font-semibold text-slate-950">{traces[selectedTrace]?.[0]}</h2>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {provider} · {t('Vandaag', 'Today')}, {traces[selectedTrace]?.[1]}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedTrace(null)}
-                aria-label={t('Sluiten', 'Close')}
-                className="flex size-8 items-center justify-center rounded-lg text-slate-400 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-slate-400"
-              >
-                ×
-              </button>
-            </header>
-            <div className="p-4">
-              <h3 className="mb-2 text-sm font-medium text-slate-800">{t('Activiteit', 'Activity')}</h3>
-              <ol className="overflow-hidden rounded-lg bg-slate-50 py-1 shadow-inset">
-                {[
-                  t('31 contextitems geladen', 'Loaded 31 context items'),
-                  t('Dagcontext geanalyseerd', 'Analyzed day context'),
-                  t('Overzicht en actiepunten opgeslagen', 'Saved overview and action items'),
-                ].map((line, index) => (
-                  <li
-                    key={line}
-                    className="grid grid-cols-[64px_minmax(0,1fr)] gap-3 px-3 py-2 font-mono text-xs leading-5"
-                  >
-                    <span className="text-slate-400 tabular-nums">16:32:0{index + 1}</span>
-                    <span className="text-slate-700">{line}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </dialog>
-        </div>
-      ) : null}
     </div>
   )
 }
@@ -2401,87 +2328,10 @@ function ExclusionsView() {
 
 function ConversationPreferencesPreview() {
   const { t } = usePreviewText()
-  const [open, setOpen] = useState(false)
-  const [recordingMode, setRecordingMode] = useState<'manual' | 'always-on'>('manual')
-  const [revinoteConnected, setRevinoteConnected] = useState(false)
-  const [automaticRevinote, setAutomaticRevinote] = useState(false)
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  useEffect(() => {
-    if (open) dialogRef.current?.showModal()
-    else dialogRef.current?.close()
-  }, [open])
   return (
-    <>
-      <CompactButton label={t('Gespreksvoorkeuren', 'Conversation preferences')} onClick={() => setOpen(true)}>
-        <IconSettingsSliderHor className="size-4" />
-      </CompactButton>
-      <dialog
-        ref={dialogRef}
-        onClose={() => setOpen(false)}
-        aria-label={t('Gespreksvoorkeuren', 'Conversation preferences')}
-        className="m-auto w-[min(600px,calc(100%-2rem))] max-h-[80vh] rounded-xl bg-white p-0 text-slate-900 shadow-raised backdrop:bg-black/20"
-      >
-        <div className="absolute right-3 top-2">
-          <CompactButton label={t('Sluiten', 'Close')} onClick={() => setOpen(false)}>
-            ×
-          </CompactButton>
-        </div>
-        <section
-          aria-labelledby="preview-recording-settings"
-          className="overflow-hidden rounded-xl bg-white shadow-raised"
-        >
-          <div className="flex min-h-12 items-center border-b border-slate-200 px-3">
-            <h2 id="preview-recording-settings" className="text-md font-semibold text-slate-900">
-              {t('Gespreksvoorkeuren', 'Conversation preferences')}
-            </h2>
-          </div>
-          <ul className="divide-y divide-slate-100">
-            <SettingsSelectRow
-              title={t('Opnamemodus', 'Recording mode')}
-              description={t(
-                'Start handmatig of laat Remember altijd klaarstaan.',
-                'Start manually or keep Remember always on.'
-              )}
-            >
-              <PreviewDropdownSelect
-                ariaLabel={t('Opnamemodus', 'Recording mode')}
-                value={recordingMode}
-                options={[
-                  { value: 'manual', label: t('Handmatig', 'Manual') },
-                  { value: 'always-on', label: t('Altijd aan', 'Always on') },
-                ]}
-                onChange={setRecordingMode}
-              />
-            </SettingsSelectRow>
-            <SettingsSelectRow
-              title="Revinote"
-              description={t(
-                'Synchroniseer mobiele meetingopnames automatisch met Remember.',
-                'Automatically sync mobile meeting recordings with Remember.'
-              )}
-            >
-              <button
-                type="button"
-                onClick={() => setRevinoteConnected((connected) => !connected)}
-                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-sm font-medium text-slate-700 outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-400"
-              >
-                {revinoteConnected ? t('Ontkoppelen', 'Disconnect') : t('Koppel Revinote', 'Connect Revinote')}
-              </button>
-            </SettingsSelectRow>
-            <SettingToggle
-              title={t('Automatisch verwerken', 'Process automatically')}
-              description={t(
-                'Stuur afgeronde opnames automatisch naar Revinote.',
-                'Send completed recordings to Revinote automatically.'
-              )}
-              disabled={!revinoteConnected}
-              value={automaticRevinote}
-              onChange={setAutomaticRevinote}
-            />
-          </ul>
-        </section>
-      </dialog>
-    </>
+    <CompactButton label={t('Gespreksvoorkeuren', 'Conversation preferences')} disabled>
+      <IconSettingsSliderHor className="size-4" />
+    </CompactButton>
   )
 }
 
@@ -2494,7 +2344,6 @@ function SettingsView() {
   const [errorReportingEnabled, setErrorReportingEnabled] = useState(true)
   const [automaticUpdates, setAutomaticUpdates] = useState(true)
   const [updateChecked, setUpdateChecked] = useState(false)
-  const [resetOpen, setResetOpen] = useState(false)
   return (
     <div className="mx-auto flex w-full max-w-[800px] grow flex-col gap-6 px-4 py-8 sm:px-6 md:py-12 lg:px-8">
       <header className="flex min-h-10 items-start justify-between gap-4">
@@ -2610,58 +2459,13 @@ function SettingsView() {
         >
           <button
             type="button"
-            onClick={() => setResetOpen(true)}
-            className="h-8 rounded-lg bg-danger-700 px-2.5 text-sm font-medium text-on-danger outline-none hover:brightness-90 focus-visible:ring-2 focus-visible:ring-danger-200"
+            disabled
+            className="h-8 rounded-lg bg-danger-700 px-2.5 text-sm font-medium text-on-danger outline-none hover:brightness-90 focus-visible:ring-2 focus-visible:ring-danger-200 disabled:pointer-events-none disabled:opacity-50"
           >
             {t('Wis alle gegevens', 'Erase all data')}
           </button>
         </SettingsSelectRow>
       </ul>
-      {resetOpen ? (
-        <div
-          className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/20 p-4 backdrop-blur-[1px]"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setResetOpen(false)
-          }}
-        >
-          <dialog open className="m-0 w-full max-w-sm rounded-xl bg-white p-5 shadow-raised">
-            <h2 className="text-md font-semibold text-slate-950">
-              {t('Wis alle lokale gegevens?', 'Erase all local data?')}
-            </h2>
-            <p className="mt-1.5 text-sm leading-5 text-slate-500">
-              {t(
-                'Dit is een veilige productdemo; er wordt niets op je Mac verwijderd.',
-                'This is a safe product demo; nothing on your Mac will be deleted.'
-              )}
-            </p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setResetOpen(false)}
-                className="h-8 rounded-lg px-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
-              >
-                {t('Annuleer', 'Cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setLaunch(false)
-                  setLanguage('system')
-                  setTheme('system')
-                  setOfflineMode(false)
-                  setErrorReportingEnabled(true)
-                  setAutomaticUpdates(true)
-                  setResetOpen(false)
-                }}
-                className="h-8 rounded-lg bg-danger-700 px-2.5 text-sm font-medium text-on-danger hover:brightness-90"
-              >
-                {t('Wis previewdata', 'Erase preview data')}
-              </button>
-            </div>
-          </dialog>
-        </div>
-      ) : null}
     </div>
   )
 }
@@ -2742,82 +2546,5 @@ function PreviewSwitch({
         />
       </span>
     </button>
-  )
-}
-
-function PreviewSearch({ onClose, onNavigate }: { onClose: () => void; onNavigate: (view: View) => void }) {
-  const { t } = usePreviewText()
-  const [query, setQuery] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
-  useEffect(() => inputRef.current?.focus(), [])
-  const items: Array<[View, string, string]> = [
-    ['inbox', t('Taken', 'Tasks'), t('Actiepunten met hun concrete bron', 'Action items with their concrete source')],
-    ['today', t('Mijn dag', 'My Day'), t('Dagoverzicht en tijdlijn', 'Daily overview and timeline')],
-    ['conversations', t('Gesprekken'), t('Opnames en herkende gesprekken', 'Recordings and recognized conversations')],
-    [
-      'wiki',
-      t('Productontwikkeling', 'Product development'),
-      t('Projecten, besluiten en onderzoek', 'Projects, decisions, and research'),
-    ],
-    ['assistant', 'Agent', t('Vragen over je werk', 'Questions about your work')],
-    ['exclusions', t('Privacy'), t('Apps en websites uitsluiten', 'Exclude apps and websites')],
-    ['settings', t('Instellingen'), t('Opstarten, bijwerken en opslag', 'Startup, updates, and storage')],
-  ]
-  const filtered = items.filter((item) => `${item[1]} ${item[2]}`.toLowerCase().includes(query.toLowerCase()))
-  return (
-    <div
-      className="absolute inset-0 z-40 flex items-start justify-center bg-slate-950/20 p-4 pt-20 backdrop-blur-[1px]"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
-    >
-      <dialog
-        open
-        aria-label={t('Zoek in Remember', 'Search Remember')}
-        className="relative m-0 w-full max-w-md overflow-hidden rounded-xl bg-white p-0 shadow-raised"
-      >
-        <label className="flex h-12 items-center gap-3 border-b border-slate-100 px-4">
-          <IconMagnifyingGlass2 className="size-4 text-slate-400" />
-          <span className="sr-only">{t('Zoek in Remember', 'Search Remember')}</span>
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') onClose()
-            }}
-            placeholder={t('Zoek in Remember…', 'Search Remember…')}
-            className="min-w-0 flex-1 text-sm text-slate-900 outline-none placeholder:text-slate-400"
-          />
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded px-1.5 py-1 text-xs text-slate-400 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-slate-400"
-          >
-            Esc
-          </button>
-        </label>
-        {filtered.length === 0 ? (
-          <p role="status" className="px-4 py-6 text-center text-sm text-slate-500">
-            {t('Geen resultaten.', 'No results.')}
-          </p>
-        ) : null}
-        <ul className="p-1.5">
-          {filtered.map(([id, title, description]) => (
-            <li key={id}>
-              <button
-                type="button"
-                onClick={() => onNavigate(id)}
-                className="w-full rounded-lg px-3 py-2.5 text-left outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-400"
-              >
-                <span className="block text-sm font-medium text-slate-800">{title}</span>
-                <span className="mt-0.5 block text-xs text-slate-500">{description}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </dialog>
-    </div>
   )
 }
