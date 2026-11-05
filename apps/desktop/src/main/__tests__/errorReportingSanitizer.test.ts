@@ -111,3 +111,19 @@ test('normalizeRendererErrorReport rejects unknown payloads and sanitizes accept
     }
   )
 })
+
+test('renderer diagnostics allow fixed reasons but never arbitrary text from IPC', () => {
+  const report = { source: 'error', name: 'Error', message: 'private content', stack: null }
+  assert.equal(
+    normalizeRendererErrorReport({ ...report, reason: 'resize-observer-loop' })?.reason,
+    'resize-observer-loop'
+  )
+  assert.equal(normalizeRendererErrorReport({ ...report, reason: 'private document title' })?.reason, undefined)
+})
+
+test('a stackless renderer report does not acquire a misleading main-process stack during sanitization', () => {
+  const original = new Error('private content')
+  original.stack = 'Error: private content'
+  const safe = privacySafeError(original, 'renderer-error')
+  assert.equal(safe.stack, 'Error: renderer-error')
+})

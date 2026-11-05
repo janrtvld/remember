@@ -133,3 +133,33 @@ test('real Sentry client drops pending reports on disable and reenables without 
   assert.equal(protocolRegistrations, 1)
   assert.match(String(requests[1]?.body), /reenabled/)
 })
+
+test('real Sentry client retains renderer locations and fixed reasons without private messages or synthetic main frames', async () => {
+  reporting.setErrorReportingEnabled(true)
+  const offset = requests.length
+  reporting.reportRendererError({
+    source: 'error',
+    name: 'Error',
+    message: 'Private document content',
+    reason: 'missing-error-object',
+    stack: 'Error: renderer-error\n    at renderer (file:///app/_next/static/chunks/renderer.js:42:7)',
+  })
+  await settleEvents()
+  const withLocation = String(requests[offset]?.body)
+  assert.match(withLocation, /renderer\.js/)
+  assert.match(withLocation, /"lineno":42/)
+  assert.match(withLocation, /"reason":"missing-error-object"/)
+  assert.doesNotMatch(withLocation, /Private document content|reportRendererError|privacySafeError/)
+
+  reporting.reportRendererError({
+    source: 'error',
+    name: 'Error',
+    message: 'Script error.',
+    stack: null,
+    reason: 'script-error',
+  })
+  await settleEvents()
+  const withoutLocation = String(requests[offset + 1]?.body)
+  assert.match(withoutLocation, /"reason":"script-error"/)
+  assert.doesNotMatch(withoutLocation, /reportRendererError|privacySafeError/)
+})

@@ -182,10 +182,11 @@ export function reportRendererError(value: unknown) {
   if (!shouldReport(fingerprint)) return
   const error = new Error(report.message)
   error.name = report.name
-  if (report.stack) error.stack = report.stack
+  error.stack = report.stack ?? `${error.name}: ${error.message}`
   reportAppError(error, {
     area: 'renderer',
     code: report.source === 'error' ? 'renderer-error' : 'renderer-unhandled-rejection',
+    tags: report.reason ? { reason: report.reason } : undefined,
   })
 }
 

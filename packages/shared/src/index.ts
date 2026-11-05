@@ -1700,11 +1700,14 @@ export interface UpdateState {
   revision: number
 }
 
+export const RENDERER_ERROR_REASONS = ['resize-observer-loop', 'script-error', 'missing-error-object'] as const
+
 export interface RendererErrorReport {
   source: 'error' | 'unhandled-rejection'
   name: string
   message: string
   stack: string | null
+  reason?: (typeof RENDERER_ERROR_REASONS)[number]
 }
 
 export interface RecordingAudioLevel {

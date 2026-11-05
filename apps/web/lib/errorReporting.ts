@@ -40,7 +40,21 @@ export function installRendererErrorReporting(bridge: Pick<RememberBridge, 'repo
     reportTimes.push(now)
     bridge.reportRendererError(input)
   }
-  const onError = (event: ErrorEvent) => report(errorReport('error', event.error, event.message || 'renderer-error'))
+  const onError = (event: ErrorEvent) => {
+    const input = errorReport('error', event.error, event.message || 'renderer-error')
+    if (!input.stack && event.filename && Number.isInteger(event.lineno) && event.lineno > 0) {
+      const column = Number.isInteger(event.colno) && event.colno >= 0 ? event.colno : 0
+      input.stack = `${input.name}: renderer-error\n    at renderer (${sanitize(event.filename, 1_000)}:${event.lineno}:${column})`
+    }
+    if (/^ResizeObserver loop (?:limit exceeded|completed with undelivered notifications\.?)$/.test(event.message)) {
+      input.reason = 'resize-observer-loop'
+    } else if (/^Script error\.?$/.test(event.message)) {
+      input.reason = 'script-error'
+    } else if (!(event.error instanceof Error)) {
+      input.reason = 'missing-error-object'
+    }
+    report(input)
+  }
   const onUnhandledRejection = (event: PromiseRejectionEvent) =>
     report(errorReport('unhandled-rejection', event.reason, 'renderer-unhandled-rejection'))
 

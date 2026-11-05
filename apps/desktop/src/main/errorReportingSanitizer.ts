@@ -1,3 +1,5 @@
+import { RENDERER_ERROR_REASONS, type RendererErrorReport } from '@remember/shared'
+
 const MAX_MESSAGE_LENGTH = 500
 const MAX_STACK_LENGTH = 20_000
 const MAX_STACK_LINES = 80
@@ -73,13 +75,6 @@ export type SentryEventLike = {
   user?: { ip_address?: string; [key: string]: unknown }
   sdk?: unknown
   [key: string]: unknown
-}
-
-export type RendererErrorReport = {
-  source: 'error' | 'unhandled-rejection'
-  name: string
-  message: string
-  stack: string | null
 }
 
 export function sanitizeDiagnosticText(value: string, maxLength = MAX_MESSAGE_LENGTH) {
@@ -213,7 +208,7 @@ export function privacySafeError(error: unknown, publicMessage: string) {
   const safe = new Error(sanitizeDiagnosticText(publicMessage, 200))
   if (!(error instanceof Error) || !error.stack) return safe
   const frames = sanitizeStack(error.stack.split('\n').slice(1).join('\n'))
-  if (frames) safe.stack = `${safe.name}: ${safe.message}\n${frames}`
+  safe.stack = `${safe.name}: ${safe.message}${frames ? `\n${frames}` : ''}`
   return safe
 }
 
@@ -227,5 +222,8 @@ export function normalizeRendererErrorReport(value: unknown): RendererErrorRepor
     name: sanitizeDiagnosticText(report.name, 100) || 'Error',
     message: sanitizeDiagnosticText(report.message) || 'renderer-error',
     stack: typeof report.stack === 'string' ? sanitizeStack(report.stack) : null,
+    ...(RENDERER_ERROR_REASONS.includes(report.reason as (typeof RENDERER_ERROR_REASONS)[number])
+      ? { reason: report.reason }
+      : {}),
   }
 }
