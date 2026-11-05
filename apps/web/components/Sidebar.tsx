@@ -4,16 +4,15 @@ import { useLocalBridge } from '@internal/context/LocalBridgeProvider'
 import { readLocalStorageJson, writeLocalStorageJson } from '@internal/lib/localStorageJson'
 import { useI18n } from '@internal/locales'
 import { IconButton } from '@internal/ui/IconButton'
+import { AgentIcon, MessagesSquareIcon, TerminalIcon } from '@internal/ui/LucideAnimated'
 import { Spinner } from '@internal/ui/Spinner'
 import type { UpdateState } from '@remember/shared'
 import {
-  Box as IconBox2,
-  MessagesSquare as IconBubbles,
   CalendarDays as IconCalendarDays,
   ChevronDown as IconChevronDownSmall,
-  Terminal as IconConsole,
   TriangleAlert as IconExclamationTriangle,
   EyeOff as IconEyeSlash,
+  Inbox as IconInbox,
   Search as IconMagnifyingGlass2,
   Plus as IconPlusSmall,
   Settings as IconSettingsGear2,
@@ -34,14 +33,14 @@ const RememberSearchDialog = dynamic(
 )
 
 const primaryTabs = [
-  { href: '/inbox/', label: 'Taken', icon: IconBox2 },
+  { href: '/inbox/', label: 'Taken', icon: IconInbox },
   { href: '/day/', label: 'Mijn dag', icon: IconCalendarDays },
-  { href: '/conversations/', label: 'Gesprekken', icon: IconBubbles },
-  { href: '/assistant/', label: 'Agent', icon: IconBubbles },
+  { href: '/conversations/', label: 'Gesprekken', icon: MessagesSquareIcon },
+  { href: '/assistant/', label: 'Agent', icon: AgentIcon },
 ]
 
 const settingsTabs = [
-  { href: '/agent/', label: 'Agent', icon: IconConsole },
+  { href: '/agent/', label: 'Agent', icon: TerminalIcon },
   { href: '/exclusions/', label: 'Privacy', icon: IconEyeSlash },
   { href: '/settings/', label: 'Instellingen', icon: IconSettingsGear2 },
 ]

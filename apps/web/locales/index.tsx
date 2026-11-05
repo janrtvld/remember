@@ -7,6 +7,7 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo } from 'r
 type Replacements = Record<string, string | number>
 
 const english: Record<string, string> = {
+  Kompas: 'Compass',
   'Space verwijderen': 'Delete space',
   'De space kon niet worden verwijderd.': 'The space could not be deleted.',
   'Deze space en alle pagina’s worden definitief van deze Mac verwijderd.':

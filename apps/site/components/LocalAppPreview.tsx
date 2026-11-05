@@ -8,21 +8,18 @@ import {
 import {
   ArrowRight as IconArrowRight,
   RotateCw as IconArrowRotateClockwise,
-  Book as IconBookSolid,
-  Box as IconBox2,
   MessagesSquare as IconBubbles,
   CalendarDays as IconCalendarDays,
   Check as IconCheckmark1Small,
   ChevronDown as IconChevronDownSmall,
   ChevronLeft as IconChevronLeft,
   ChevronRight as IconChevronRight,
-  Terminal as IconConsole,
   Ellipsis as IconDotGrid1x3HorizontalTight,
   EyeOff as IconEyeSlash,
   FileText as IconFileText,
+  Inbox as IconInbox,
   KeyRound as IconKey1,
   LoaderCircle as IconLoadingCircle,
-  LockKeyhole as IconLockSolid,
   Search as IconMagnifyingGlass2,
   Pause as IconPause,
   Play as IconPlay,
@@ -36,6 +33,8 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import type { ComponentType, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
+import { FilledSpaceIcon } from '../../web/ui/FilledSpaceIcon'
+import { TerminalIcon } from '../../web/ui/LucideAnimated'
 import type { SiteLocale } from '../lib/locale-shared'
 import { PreviewLocaleProvider, usePreviewText } from './local-app-preview/locale'
 import { PreviewDropdownSelect } from './local-app-preview/PreviewDropdownSelect'
@@ -52,23 +51,23 @@ type RecordingState = 'idle' | 'recording' | 'processing'
 const previewWikiSpaceAppearances: Record<
   PreviewWikiSpace,
   {
-    icon: ComponentType<{ className?: string; mode?: 'masked' | 'raw' }>
+    icon: 'lock' | 'book'
     foreground: string
     surface: string
   }
 > = {
   personal: {
-    icon: IconLockSolid,
+    icon: 'lock',
     foreground: 'text-[oklch(var(--categorical-grey))]',
     surface: 'bg-[oklch(var(--categorical-grey)/0.16)]',
   },
   product: {
-    icon: IconBookSolid,
+    icon: 'book',
     foreground: 'text-[oklch(var(--categorical-green))]',
     surface: 'bg-[oklch(var(--categorical-green)/0.16)]',
   },
   research: {
-    icon: IconBookSolid,
+    icon: 'book',
     foreground: 'text-[oklch(var(--categorical-purple))]',
     surface: 'bg-[oklch(var(--categorical-purple)/0.16)]',
   },
@@ -79,13 +78,13 @@ const primaryNavigation: Array<{
   label: string
   icon: ComponentType<{ className?: string; mode?: 'masked' | 'raw' }>
 }> = [
-  { id: 'inbox', label: 'Inbox', icon: IconBox2 },
+  { id: 'inbox', label: 'Inbox', icon: IconInbox },
   { id: 'today', label: 'Werkdagen', icon: IconCalendarDays },
   { id: 'conversations', label: 'Gesprekken', icon: IconBubbles },
 ]
 
 const settingsNavigation: typeof primaryNavigation = [
-  { id: 'agent', label: 'Agent', icon: IconConsole },
+  { id: 'agent', label: 'Agent', icon: TerminalIcon },
   { id: 'exclusions', label: 'Privacy', icon: IconEyeSlash },
   { id: 'settings', label: 'Instellingen', icon: IconSettingsGear2 },
 ]
@@ -664,8 +663,7 @@ function PreviewSpaceNav({
 
 function PreviewWikiSpaceGlyph({ space, className }: { space: PreviewWikiSpace; className?: string }) {
   const appearance = previewWikiSpaceAppearances[space]
-  const Icon = appearance.icon
-  return <Icon className={`shrink-0 ${appearance.foreground} ${className ?? ''}`} />
+  return <FilledSpaceIcon icon={appearance.icon} className={`shrink-0 ${appearance.foreground} ${className ?? ''}`} />
 }
 
 function PreviewWikiSpaceBadge({ space, className }: { space: PreviewWikiSpace; className?: string }) {

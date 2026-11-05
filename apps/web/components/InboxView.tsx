@@ -30,7 +30,6 @@ import {
   Inbox as IconArrowInbox,
   ArrowLeft as IconArrowLeft,
   ArrowRight as IconArrowRight,
-  Box as IconBox2,
   MessageSquare as IconBubbleSparkle,
   MessagesSquare as IconBubbles,
   Check as IconCheckmark1Small,
@@ -38,6 +37,7 @@ import {
   CircleCheck as IconCircleCheck,
   CircleDashed as IconCircleDashed,
   X as IconCrossSmall,
+  Inbox as IconInbox,
   Pencil as IconPencil,
   Plus as IconPlusSmall,
   Square as IconStop,
@@ -343,7 +343,7 @@ export function InboxView() {
             <p className="text-slate-500 text-ui">{t('Je inbox is leeg')}</p>
           </section>
           <main className="hidden min-h-0 min-w-0 flex-col items-center justify-center px-6 text-center text-slate-500 md:flex">
-            <IconBox2 className="size-20 [&_path]:stroke-[1.25px]" aria-hidden="true" />
+            <IconInbox className="size-20 [&_path]:stroke-[1.25px]" aria-hidden="true" />
             <p className="mt-6 text-ui">{t('Geen actiepunt geselecteerd')}</p>
           </main>
         </div>
@@ -529,7 +529,7 @@ function InboxViewPreferences({
       onClick={() => onShowCompletedChange(!showCompleted)}
       className={twMerge('ml-1 shrink-0', showCompleted && 'bg-blue-100 text-blue-700 hover:bg-slate-100')}
     >
-      <IconBox2 className="size-4" aria-hidden="true" />
+      <IconInbox className="size-4" aria-hidden="true" />
     </IconButton>
   )
 }

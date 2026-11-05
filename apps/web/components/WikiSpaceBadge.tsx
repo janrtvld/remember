@@ -1,32 +1,6 @@
+import { FilledSpaceIcon } from '@internal/ui/FilledSpaceIcon'
 import type { WikiSpaceColor, WikiSpaceIcon } from '@remember/shared'
-import {
-  Landmark as IconBank,
-  Book as IconBook,
-  Building2 as IconBuildings,
-  Code as IconCode,
-  Folder as IconFolder1,
-  Heart as IconHeart,
-  Lightbulb as IconLightBulb,
-  LockKeyhole as IconLock,
-  Users as IconPeople,
-  Rocket as IconRocket,
-  Star as IconStar,
-} from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
-
-const icons: Record<WikiSpaceIcon, typeof IconLock> = {
-  lock: IconLock,
-  book: IconBook,
-  folder: IconFolder1,
-  building: IconBuildings,
-  code: IconCode,
-  bank: IconBank,
-  heart: IconHeart,
-  idea: IconLightBulb,
-  people: IconPeople,
-  rocket: IconRocket,
-  star: IconStar,
-}
 
 export const wikiSpaceIconChoices: Array<{ id: WikiSpaceIcon; label: string }> = [
   { id: 'lock', label: 'Slot' },
@@ -40,6 +14,7 @@ export const wikiSpaceIconChoices: Array<{ id: WikiSpaceIcon; label: string }> =
   { id: 'people', label: 'Mensen' },
   { id: 'rocket', label: 'Raket' },
   { id: 'star', label: 'Ster' },
+  { id: 'compass', label: 'Kompas' },
 ]
 
 export const wikiSpaceColorChoices: Array<{ id: WikiSpaceColor; label: string }> = [
@@ -111,8 +86,7 @@ export function WikiSpaceGlyph({
   color: WikiSpaceColor
   className?: string
 }) {
-  const Icon = icons[icon]
-  return <Icon className={twMerge('shrink-0', colorStyles[color].foreground, className)} aria-hidden="true" />
+  return <FilledSpaceIcon icon={icon} className={twMerge('shrink-0', colorStyles[color].foreground, className)} />
 }
 
 export function WikiSpaceBadge({

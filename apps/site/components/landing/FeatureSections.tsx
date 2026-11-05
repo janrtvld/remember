@@ -1,8 +1,8 @@
 import {
   ArrowRight as IconArrowRight,
   Book as IconBook,
-  Box as IconBox2,
   MessagesSquare as IconBubbles,
+  Inbox as IconInbox,
 } from 'lucide-react'
 import { type SiteLocale, siteText } from '../../lib/locale-shared'
 import { Button, DOWNLOAD_URL } from '../ui'
@@ -41,7 +41,7 @@ export function FeatureSections({ locale }: { locale: SiteLocale }) {
         width: 1632,
         height: 1080,
       },
-      icon: IconBox2,
+      icon: IconInbox,
       overview: siteText(locale, 'Weet wat er nog openstaat.', "Know what's still open."),
       summary: siteText(
         locale,

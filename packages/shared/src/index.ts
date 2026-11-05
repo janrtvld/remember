@@ -1331,6 +1331,7 @@ export const WIKI_SPACE_ICONS = [
   'people',
   'rocket',
   'star',
+  'compass',
 ] as const
 export type WikiSpaceIcon = (typeof WIKI_SPACE_ICONS)[number]
 

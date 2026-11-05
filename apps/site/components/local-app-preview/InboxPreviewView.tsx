@@ -6,13 +6,13 @@ import {
   Inbox as IconArrowInbox,
   ArrowRight as IconArrowRight,
   ArrowUp as IconArrowUp,
-  Box as IconBox2,
   MessagesSquare as IconBubbles,
   Check as IconCheckmark1Small,
   ChevronDown as IconChevronDownSmall,
   ChevronRight as IconChevronRight,
   CircleDashed as IconCircleDashed,
   X as IconCrossSmall,
+  Inbox as IconInbox,
   Pencil as IconPencil,
   Plus as IconPlusSmall,
   AppWindow as IconWindowCursor,
@@ -224,7 +224,7 @@ export function InboxPreviewView({ onOpenSource }: { onOpenSource: (kind: 'meeti
               onClick={toggleShowCompleted}
               className={`ml-1 flex size-7 shrink-0 items-center justify-center rounded-md outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-slate-400 ${showCompleted ? 'bg-blue-100 text-blue-700' : 'text-slate-500'}`}
             >
-              <IconBox2 className="size-4" />
+              <IconInbox className="size-4" />
             </button>
             <button
               ref={createTriggerRef}

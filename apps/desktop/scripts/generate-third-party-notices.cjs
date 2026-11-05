@@ -59,7 +59,7 @@ function generateNotices(repository) {
     '# Third-party notices',
     '',
     'Remember includes third-party software. Each component remains subject to its own license and copyright notices; this inventory grants no additional rights.',
-    'The inventory includes the installed production dependency closure of the desktop and renderer, plus the website fonts. Some listed components are build-time parts of those packages rather than distributed code.',
+    'The inventory includes the installed production dependency closure of the desktop and renderer, plus adapted Lucide Animated icons and the website fonts. Some listed components are build-time parts of those packages rather than distributed code.',
     'Electron and Chromium notices are included separately beside this file. The bundled Claude runtime is subject to Anthropic’s applicable agreements, reproduced in claude-agent-sdk.txt; the OpenAI Codex Apache license is in codex-APACHE-2.0.txt.',
     '',
     '## Components',
@@ -72,6 +72,19 @@ function generateNotices(repository) {
     if (item.notices.length)
       lines.push(`  Included notices: ${item.notices.map((hash) => textIds.get(hash)).join(', ')}`)
   }
+  lines.push(
+    '',
+    '## Lucide Animated icons',
+    '',
+    'Source: https://github.com/pqoqubbw/icons',
+    '',
+    'Static icon geometry adapted for Remember.',
+    '',
+    '````text',
+    readFileSync(path.join(repository, 'apps/web/ui/lucide-animated-LICENSE.txt'), 'utf8').trimEnd(),
+    '````',
+    ''
+  )
   lines.push('', '## Website fonts', '')
   for (const name of ['Figtree', 'Manrope']) {
     const family = name.toLowerCase()
