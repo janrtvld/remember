@@ -294,6 +294,7 @@ const defaultSettings: LocalSettings = {
   interfaceLanguage: 'system',
   interfaceTheme: 'system',
   offlineMode: false,
+  errorReportingEnabled: true,
   automaticUpdates: true,
   defaultAgentProvider: 'codex',
   agentComputer: { kind: 'local' },

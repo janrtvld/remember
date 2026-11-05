@@ -25,6 +25,44 @@ async function temporarySettingsDirectory() {
 }
 
 describe('settingsStore', () => {
+  it('preserves an independent error-reporting choice across offline toggles, restart, and repairs', async () => {
+    const directory = await temporarySettingsDirectory()
+    const document: Record<string, unknown> = { ...DEFAULT_SETTINGS, settingsSchemaVersion: 1, settingsGeneration: 1 }
+    delete document.errorReportingEnabled
+    await writeFile(join(directory, 'settings.json'), JSON.stringify(document))
+    assert.equal(readSettingsAt(directory).health.status, 'healthy')
+    assert.equal(readSettingsAt(directory).settings.errorReportingEnabled, true)
+
+    const store = createCachedSettingsStore()
+    store.update(directory, { errorReportingEnabled: false }, Date.now())
+    store.update(directory, { offlineMode: true }, Date.now())
+    store.update(directory, { offlineMode: false }, Date.now())
+    assert.equal(createCachedSettingsStore().get(directory).errorReportingEnabled, false)
+    store.update(directory, { errorReportingEnabled: 'true' as unknown as boolean }, Date.now())
+    assert.equal(createCachedSettingsStore().get(directory).errorReportingEnabled, false)
+
+    await writeFile(join(directory, 'settings.json'), '{broken')
+    assert.equal(readSettingsAt(directory).settings.errorReportingEnabled, false)
+    assert.equal(repairSettingsAt(directory, 'restore-last-known-good').errorReportingEnabled, false)
+    await writeFile(join(directory, 'settings.json'), '{broken')
+    const repaired = repairSettingsAt(directory, 'use-safe-settings')
+    assert.equal(repaired.offlineMode, true)
+    assert.equal(repaired.errorReportingEnabled, false)
+    assert.equal(createCachedSettingsStore().get(directory).errorReportingEnabled, false)
+  })
+
+  it('fails closed for an invalid stored error-reporting preference', async () => {
+    const directory = await temporarySettingsDirectory()
+    writeSettingsAt(directory, { ...DEFAULT_SETTINGS, errorReportingEnabled: false })
+    const path = join(directory, 'settings.json')
+    const document = JSON.parse(await readFile(path, 'utf8'))
+    await writeFile(path, JSON.stringify({ ...document, errorReportingEnabled: 'true' }))
+    const snapshot = readSettingsAt(directory)
+    assert.equal(snapshot.health.status, 'recovery-required')
+    assert.equal(snapshot.settings.errorReportingEnabled, false)
+    assert.equal(snapshot.settings.offlineMode, true)
+  })
+
   it('defaults old profiles to this computer and persists only valid explicit remote endpoints', async () => {
     const directory = await temporarySettingsDirectory()
     const document: Record<string, unknown> = { ...DEFAULT_SETTINGS, settingsSchemaVersion: 1, settingsGeneration: 1 }

@@ -58,7 +58,7 @@ Remember stores audio, transcripts, activity, day summaries, and Spaces in its l
 
 AI analysis is optional and requires an internet connection. Relevant transcript text and captured screen context are sent to the ChatGPT or Claude connection you select; local storage does not mean those AI requests stay on-device. Raw audio is not sent to these agents.
 
-The app also connects to GitHub for updates and model installation, and sends sanitized technical error reports to Sentry. The optional Revinote integration uploads recordings only when you choose its processing workflow. Offline mode pauses external connections while local features remain available. See the [privacy policy](https://www.remember.computer/privacy) for details.
+The app also connects to GitHub for updates and model installation, and sends sanitized technical error reports to Sentry. You can turn off **Technical error reports** independently in Settings; the preference is stored locally and is on by default. The optional Revinote integration uploads recordings only when you choose its processing workflow. Offline mode pauses all external connections, including error reports, without changing that preference. Local features remain available. See the [privacy policy](https://www.remember.computer/privacy) for details.
 
 ## Development
 

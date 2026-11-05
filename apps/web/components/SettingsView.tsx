@@ -85,6 +85,8 @@ export function SettingsView() {
   const [widgetError, setWidgetError] = useState(false)
   const [isUpdatingLaunchSetting, setIsUpdatingLaunchSetting] = useState(false)
   const [isUpdatingOfflineMode, setIsUpdatingOfflineMode] = useState(false)
+  const [errorReportingSaving, setErrorReportingSaving] = useState(false)
+  const [errorReportingError, setErrorReportingError] = useState(false)
   const [isUpdatingAutomaticUpdates, setIsUpdatingAutomaticUpdates] = useState(false)
   if (!local.settings) return null
   const changeWidgetSetting = async (edgeWidgetEnabled: boolean) => {
@@ -135,6 +137,18 @@ export function SettingsView() {
       await local.refresh()
     } finally {
       setIsUpdatingAutomaticUpdates(false)
+    }
+  }
+
+  const changeErrorReporting = async (errorReportingEnabled: boolean) => {
+    setErrorReportingSaving(true)
+    setErrorReportingError(false)
+    try {
+      await local.updateSettings({ errorReportingEnabled })
+    } catch {
+      setErrorReportingError(true)
+    } finally {
+      setErrorReportingSaving(false)
     }
   }
 
@@ -226,6 +240,30 @@ export function SettingsView() {
             checked={local.settings.offlineMode}
             disabled={isUpdatingOfflineMode}
             onChange={(checked) => void changeOfflineMode(checked)}
+          />
+        </Field>
+
+        <Field className="grid min-h-[64px] gap-2 px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <div className="min-w-0">
+            <Label className="block cursor-pointer text-balance font-medium text-slate-900 text-ui">
+              {t('Technische foutmeldingen')}
+            </Label>
+            <Description className="mt-0.5 max-w-prose text-pretty text-slate-500 text-xs leading-[1.5]">
+              {local.settings.offlineMode
+                ? t('Gepauzeerd zolang Offline mode aanstaat.')
+                : t('Stuur technische foutinformatie naar Sentry, zonder opnames, transcripties of prompts.')}
+            </Description>
+            {errorReportingError ? (
+              <p role="alert" className="mt-1 text-danger-700 text-xs">
+                {t('De instelling kon niet worden opgeslagen. Probeer opnieuw.')}
+              </p>
+            ) : null}
+          </div>
+          <Switch
+            checked={local.settings.errorReportingEnabled}
+            disabled={errorReportingSaving || local.settings.offlineMode}
+            aria-busy={errorReportingSaving}
+            onChange={(checked) => void changeErrorReporting(checked)}
           />
         </Field>
 

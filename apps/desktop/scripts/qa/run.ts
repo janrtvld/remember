@@ -488,6 +488,9 @@ async function launch(launchProfile = profile) {
     timeout: 45_000,
     env: {
       ...env,
+      ...(process.argv.includes('--error-reporting')
+        ? { REMEMBER_SENTRY_ENABLE_DEV: '0', REMEMBER_SENTRY_DSN: 'http://qa@127.0.0.1:9/1' }
+        : {}),
       ...(process.argv.includes('--startup-travel') ? { TZ: 'America/Los_Angeles' } : {}),
       CODEX_HOME: join(agentSources, 'codex'),
       ...(mode === 'learning' ? { CLAUDE_CONFIG_DIR: join(agentSources, 'claude') } : {}),
@@ -2808,6 +2811,69 @@ async function shortSpaceSpeech(target: Page, space: { spaceId: string; spaceNam
   assert.deepEqual(rendererErrors, [], 'Unexpected renderer exceptions in Space recording flow')
 }
 
+async function errorReportingSettingsQa() {
+  let target = await launch()
+  const reportingName = 'Technical error reports'
+  const readPreference = () => target.evaluate(() => window.remember.getSettings())
+  const verify = async (enabled: boolean, offlineMode: boolean) => {
+    await target.waitForFunction(
+      async ({ enabled, offlineMode }) => {
+        const settings = await window.remember.getSettings()
+        return settings.errorReportingEnabled === enabled && settings.offlineMode === offlineMode
+      },
+      { enabled, offlineMode }
+    )
+    const toggle = target.getByRole('switch', {
+      name: reportingName,
+      exact: true,
+      checked: enabled,
+      disabled: offlineMode,
+    })
+    await toggle.waitFor({ state: 'visible' })
+    assert.equal(await toggle.isDisabled(), offlineMode)
+    const persisted = JSON.parse(readFileSync(join(profile, 'settings.json'), 'utf8'))
+    assert.equal(persisted.errorReportingEnabled, enabled)
+    assert.equal(persisted.offlineMode, offlineMode)
+  }
+  await target.goto(`${webUrl}/settings/`)
+  await verify(true, true)
+  await target.getByRole('switch', { name: 'Offline mode', exact: true }).click()
+  await verify(true, false)
+  await target.getByRole('switch', { name: reportingName, exact: true }).click()
+  await verify(false, false)
+  await target.screenshot({ path: join(runDirectory, 'error-reporting-disabled.png') })
+  checks.push('Native Settings switch saves disabled reporting through IPC and to settings.json')
+
+  await target.getByRole('switch', { name: reportingName, exact: true }).click()
+  await verify(true, false)
+  checks.push('Reporting preference can be enabled again in the same native session')
+  await target.getByRole('switch', { name: 'Offline mode', exact: true }).click()
+  await verify(true, true)
+  await target.getByText('Paused while Offline mode is on.', { exact: true }).first().waitFor()
+  await target.screenshot({ path: join(runDirectory, 'error-reporting-offline.png') })
+  await target.getByRole('switch', { name: 'Offline mode', exact: true }).click()
+  await verify(true, false)
+  checks.push('Offline mode disables the reporting control while retaining its saved preference')
+
+  await target.getByRole('switch', { name: reportingName, exact: true }).click()
+  await verify(false, false)
+  const beforeRestart = await readPreference()
+  await closeElectron()
+  target = await launch()
+  await target.goto(`${webUrl}/settings/`)
+  await verify(false, false)
+  assert.equal((await readPreference()).cloudAnalysisConsent, false)
+  await target.screenshot({ path: join(runDirectory, 'error-reporting-restarted.png') })
+  writeJson('error-reporting-proof.json', {
+    boundary:
+      'Real Electron Settings UI, IPC and restart persistence; development Sentry disabled, no event delivery tested.',
+    beforeRestart: { enabled: beforeRestart.errorReportingEnabled, offlineMode: beforeRestart.offlineMode },
+    afterRestart: { enabled: (await readPreference()).errorReportingEnabled, offlineMode: false },
+  })
+  checks.push('Disabled reporting preference survives a complete Electron restart and renders correctly')
+  assert.deepEqual(rendererErrors, [], 'Unexpected renderer exceptions in error reporting Settings')
+}
+
 async function main() {
   if (process.argv.includes('--help')) {
     console.log(
@@ -2976,6 +3042,20 @@ async function main() {
     if (proactiveBriefingMini) seedProactiveBriefingMiniProfile(profile)
     if (proactiveNotes) seedProactiveNotesProfile(profile)
     const fixture = hostTask || anyProactiveBriefing || proactiveNotes ? null : seedProfile(profile)
+    if (process.argv.includes('--error-reporting')) {
+      assert.deepEqual([...process.argv.slice(2)].sort(), ['--error-reporting', 'smoke'])
+      const settingsFile = join(profile, 'settings.json')
+      const settings = JSON.parse(readFileSync(settingsFile, 'utf8'))
+      writeFileSync(
+        settingsFile,
+        JSON.stringify({
+          ...settings,
+          errorReportingEnabled: true,
+          cloudAnalysisConsent: false,
+          audioCaptureEnabled: false,
+        })
+      )
+    }
     const audioProcessingRecovery = process.argv.includes('--audio-processing-recovery')
       ? seedAudioProcessingRecovery(profile)
       : null
@@ -3024,7 +3104,10 @@ async function main() {
     await startRenderer()
     report.phase = 'running scenario'
     writeJson('report.json', report)
-    if (mode === 'smoke' && process.argv.includes('--context-loading')) {
+    if (mode === 'smoke' && process.argv.includes('--error-reporting')) {
+      report.scope = 'Native error reporting preference, Offline mode and restart persistence; Sentry delivery disabled'
+      await errorReportingSettingsQa()
+    } else if (mode === 'smoke' && process.argv.includes('--context-loading')) {
       assert(fixture)
       await contextLoadingQa(fixture)
     } else if (mode === 'smoke' && proactiveNotes) {

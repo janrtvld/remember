@@ -1550,6 +1550,7 @@ export interface LocalSettings {
   interfaceLanguage: InterfaceLanguage
   interfaceTheme: InterfaceTheme
   offlineMode: boolean
+  errorReportingEnabled: boolean
   automaticUpdates: boolean
   defaultAgentProvider: AgentProvider
   agentComputer: import('./agentComputer').AgentComputer

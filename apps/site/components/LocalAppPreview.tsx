@@ -2564,6 +2564,7 @@ function SettingsView() {
   const [language, setLanguage] = useState('system')
   const [theme, setTheme] = useState('system')
   const [offlineMode, setOfflineMode] = useState(false)
+  const [errorReportingEnabled, setErrorReportingEnabled] = useState(true)
   const [automaticUpdates, setAutomaticUpdates] = useState(true)
   const [updateChecked, setUpdateChecked] = useState(false)
   const [resetOpen, setResetOpen] = useState(false)
@@ -2627,6 +2628,20 @@ function SettingsView() {
           onChange={setOfflineMode}
         />
         <SettingToggle
+          title={t('Technische foutmeldingen', 'Technical error reports')}
+          description={
+            offlineMode
+              ? t('Gepauzeerd zolang Offline mode aanstaat.', 'Paused while Offline mode is on.')
+              : t(
+                  'Stuur technische foutinformatie naar Sentry, zonder opnames, transcripties of prompts.',
+                  'Send technical error information to Sentry, without recordings, transcripts, or prompts.'
+                )
+          }
+          value={errorReportingEnabled}
+          disabled={offlineMode}
+          onChange={setErrorReportingEnabled}
+        />
+        <SettingToggle
           title={t('Automatische updates', 'Automatic updates')}
           description={
             offlineMode
@@ -2646,8 +2661,8 @@ function SettingsView() {
             offlineMode
               ? t('Gepauzeerd zolang Offline mode aanstaat.', 'Paused while Offline mode is on.')
               : updateChecked
-                ? t('Zojuist gecontroleerd. Versie 0.2.9 is actueel.', 'Just checked. Version 0.2.9 is up to date.')
-                : t('Versie 0.2.9 is actueel.', 'Version 0.2.9 is up to date.')
+                ? t('Zojuist gecontroleerd. Versie 1.0.0 is actueel.', 'Just checked. Version 1.0.0 is up to date.')
+                : t('Versie 1.0.0 is actueel.', 'Version 1.0.0 is up to date.')
           }
         >
           <button
@@ -2708,6 +2723,7 @@ function SettingsView() {
                   setLanguage('system')
                   setTheme('system')
                   setOfflineMode(false)
+                  setErrorReportingEnabled(true)
                   setAutomaticUpdates(true)
                   setResetOpen(false)
                 }}

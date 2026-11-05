@@ -43,6 +43,7 @@ export const DEFAULT_SETTINGS: LocalSettings = {
   interfaceLanguage: 'system',
   interfaceTheme: 'system',
   offlineMode: false,
+  errorReportingEnabled: true,
   automaticUpdates: true,
   defaultAgentProvider: 'codex',
   agentComputer: { kind: 'local' },
@@ -124,6 +125,7 @@ const DEFAULTED_CURRENT_SETTINGS_KEYS = new Set<keyof LocalSettings>([
   'edgeWidgetEdge',
   'privacyOnboardingCompleted',
   'offlineMode',
+  'errorReportingEnabled',
   'automaticRevinoteProcessing',
   'agentLearningEnabled',
   'agentLearningEnabledAt',
@@ -208,6 +210,7 @@ function normalizeStoredSettings(parsed: StoredSettings): LocalSettings {
     interfaceLanguage: interfaceLanguage(parsed.interfaceLanguage, DEFAULT_SETTINGS.interfaceLanguage),
     interfaceTheme: interfaceTheme(parsed.interfaceTheme, DEFAULT_SETTINGS.interfaceTheme),
     offlineMode: parsed.offlineMode === true || parsed.airgapMode === true,
+    errorReportingEnabled: parsed.errorReportingEnabled !== false,
     automaticUpdates: parsed.automaticUpdates !== false,
     defaultAgentProvider,
     agentComputer: normalizeAgentComputer(parsed.agentComputer),
@@ -320,6 +323,8 @@ function normalizeSettingsPatch(
     interfaceLanguage: interfaceLanguage(patch.interfaceLanguage, current.interfaceLanguage),
     interfaceTheme: interfaceTheme(patch.interfaceTheme, current.interfaceTheme),
     offlineMode: patch.offlineMode ?? current.offlineMode,
+    errorReportingEnabled:
+      typeof patch.errorReportingEnabled === 'boolean' ? patch.errorReportingEnabled : current.errorReportingEnabled,
     automaticUpdates: patch.automaticUpdates ?? current.automaticUpdates,
     defaultAgentProvider: choice(patch.defaultAgentProvider, AGENT_PROVIDERS, current.defaultAgentProvider),
     agentComputer:
@@ -644,7 +649,7 @@ export function repairSettingsAt(directory: string, action: 'restore-last-known-
   const selected =
     action === 'restore-last-known-good' && recovered && 'settings' in recovered
       ? recovered.settings
-      : safeSettings(DEFAULT_SETTINGS)
+      : { ...safeSettings(DEFAULT_SETTINGS), errorReportingEnabled: snapshot.settings.errorReportingEnabled }
   const generation = recovered && 'settings' in recovered ? recovered.generation + 1 : 1
   writeDocumentAtomically(join(directory, SETTINGS_FILE), settingsDocument(selected, Math.max(1, generation)))
   if (!existsSync(backup)) writeDocumentAtomically(backup, settingsDocument(selected, Math.max(1, generation)))

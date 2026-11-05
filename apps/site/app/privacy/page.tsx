@@ -81,9 +81,10 @@ function PrivacyContent({ locale }: { locale: SiteLocale }) {
         <PrivacySection title="Technische foutmeldingen">
           <p>
             De desktopapp verstuurt technische foutmeldingen naar Sentry om crashes en mislukte Day-analyses te kunnen
-            onderzoeken, tenzij Offline mode aanstaat. Zo’n melding bevat alleen een opgeschoonde stacktrace, de app-,
-            Electron- en OS-versie en bij een Day-analyse een foutcode, agent, fase en technische tellers zoals de
-            omvang van in- en uitvoer.
+            onderzoeken. Je kunt dit apart uitschakelen via Instellingen → Technische foutmeldingen. Deze voorkeur wordt
+            lokaal bewaard en staat standaard aan. Offline mode pauzeert foutmeldingen ook, zonder je voorkeur te
+            veranderen. Zo’n melding bevat alleen een opgeschoonde stacktrace, de app-, Electron- en OS-versie en bij
+            een Day-analyse een foutcode, agent, fase en technische tellers zoals de omvang van in- en uitvoer.
           </p>
           <p>
             Remember verstuurt hiervoor geen opnames, transcripties, scherm- of appactiviteit, Day- of Wiki-inhoud,
@@ -182,9 +183,10 @@ function PrivacyContent({ locale }: { locale: SiteLocale }) {
       <PrivacySection title="Technical error reports">
         <p>
           The desktop app sends technical error reports to Sentry so that crashes and failed Day analyses can be
-          investigated, unless Offline mode is enabled. A report contains only a sanitized stack trace, the app,
-          Electron, and OS versions, and for a Day analysis an error code, agent, phase, and technical counters such as
-          input and output sizes.
+          investigated. You can turn this off independently in Settings → Technical error reports. This preference is
+          stored locally and is on by default. Offline mode also pauses error reports without changing your preference.
+          A report contains only a sanitized stack trace, the app, Electron, and OS versions, and for a Day analysis an
+          error code, agent, phase, and technical counters such as input and output sizes.
         </p>
         <p>
           Remember does not send recordings, transcripts, screen or app activity, Day or Wiki content, prompts, agent

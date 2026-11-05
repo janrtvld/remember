@@ -1,7 +1,7 @@
 import { release as osRelease } from 'node:os'
 import type { AgentProvider, AgentTraceDiagnostic, DayRefreshReason } from '@remember/shared'
 import * as Sentry from '@sentry/electron/main'
-import { app } from 'electron'
+import { app, session } from 'electron'
 import {
   normalizeRendererErrorReport,
   privacySafeError,
@@ -17,6 +17,10 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60_000
 const RATE_LIMIT_MAX_PER_FINGERPRINT = 10
 const recentReports = new Map<string, number[]>()
 let initialized = false
+let reportingEnabled = false
+let reportingGeneration = 0
+const pendingRequests = new Set<AbortController>()
+const eventGenerations = new WeakMap<Sentry.EventHint, number>()
 
 function shouldReport(fingerprint: string, now = Date.now()) {
   const recent = (recentReports.get(fingerprint) ?? []).filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS)
@@ -38,7 +42,7 @@ function sentryDsn() {
 export function initializeErrorReporting(enabled = true) {
   if (initialized) return
   const dsn = sentryDsn()
-  const shouldEnable = enabled && Boolean(dsn) && (app.isPackaged || process.env.REMEMBER_SENTRY_ENABLE_DEV === '1')
+  const shouldEnable = Boolean(dsn) && (app.isPackaged || process.env.REMEMBER_SENTRY_ENABLE_DEV === '1')
   if (!shouldEnable) return
   if (app.isReady()) {
     console.warn('[sentry] Error reporting will remain disabled until the next launch')
@@ -51,6 +55,39 @@ export function initializeErrorReporting(enabled = true) {
       environment: app.isPackaged ? 'production' : 'development',
       release: `remember-desktop-${app.getVersion()}`,
       enabled: true,
+      sendClientReports: false,
+      transport: (options) =>
+        Sentry.createTransport(options, async (request) => {
+          const generation = reportingGeneration
+          if (!reportingEnabled) return {}
+          await app.whenReady()
+          if (!reportingEnabled || generation !== reportingGeneration) return {}
+
+          const controller = new AbortController()
+          pendingRequests.add(controller)
+          try {
+            const response = await session.fromPartition('sentry-electron').fetch(options.url, {
+              method: 'POST',
+              headers: { ...options.headers, 'Content-Type': 'application/x-sentry-envelope' },
+              credentials: 'omit',
+              body: typeof request.body === 'string' ? request.body : Buffer.from(request.body),
+              signal: controller.signal,
+            })
+            await response.arrayBuffer()
+            return {
+              statusCode: response.status,
+              headers: {
+                'retry-after': response.headers.get('retry-after'),
+                'x-sentry-rate-limits': response.headers.get('x-sentry-rate-limits'),
+              },
+            }
+          } catch (error) {
+            if (controller.signal.aborted) return {}
+            throw error
+          } finally {
+            pendingRequests.delete(controller)
+          }
+        }),
       sampleRate: 1,
       dataCollection: {
         userInfo: false,
@@ -87,22 +124,34 @@ export function initializeErrorReporting(enabled = true) {
           architecture: process.arch,
         },
       },
-      beforeSend: (event) => sanitizeSentryEvent(event as unknown as SentryEventLike) as unknown as typeof event,
+      beforeSend: (event, hint) => {
+        if (!reportingEnabled || eventGenerations.get(hint) !== reportingGeneration) return null
+        return sanitizeSentryEvent(event as unknown as SentryEventLike) as unknown as typeof event
+      },
+    })
+    // Keep one SDK installation: Electron's protocol registration must happen before ready.
+    // Mark events before asynchronous processors so an off/on cycle cannot release old reports.
+    Sentry.getClient()?.on('preprocessEvent', (_event, hint) => {
+      if (hint) eventGenerations.set(hint, reportingEnabled ? reportingGeneration : -1)
     })
     initialized = true
+    setErrorReportingEnabled(enabled)
   } catch {
     console.warn('[sentry] Error reporting could not start')
   }
 }
 
-export async function setErrorReportingEnabled(enabled: boolean) {
-  if (enabled) {
-    initializeErrorReporting()
-    return
-  }
+export function setErrorReportingEnabled(enabled: boolean) {
   if (!initialized) return
-  initialized = false
-  await Sentry.close(0)
+  reportingEnabled = enabled
+  const client = Sentry.getClient()
+  if (client) client.getOptions().enabled = enabled
+  if (enabled) return
+
+  reportingGeneration += 1
+  recentReports.clear()
+  for (const controller of pendingRequests) controller.abort()
+  pendingRequests.clear()
 }
 
 type AppErrorContext = {
@@ -113,7 +162,7 @@ type AppErrorContext = {
 }
 
 export function reportAppError(error: unknown, context: AppErrorContext) {
-  if (!initialized) return
+  if (!reportingEnabled) return
   const fingerprint = `${context.area}:${context.code}`
   if (!shouldReport(fingerprint)) return
   Sentry.captureException(privacySafeError(error, context.code), {
@@ -128,7 +177,7 @@ export function reportAppError(error: unknown, context: AppErrorContext) {
 
 export function reportRendererError(value: unknown) {
   const report = normalizeRendererErrorReport(value)
-  if (!report || !initialized) return
+  if (!report || !reportingEnabled) return
   const fingerprint = `renderer:${report.name}:${report.message}`
   if (!shouldReport(fingerprint)) return
   const error = new Error(report.message)

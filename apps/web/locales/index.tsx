@@ -835,6 +835,11 @@ const english: Record<string, string> = {
   'Het audiomodel kon niet worden gedownload. Controleer je verbinding en probeer het opnieuw.':
     'The audio model could not be downloaded. Check your connection and try again.',
   'Offline mode': 'Offline mode',
+  'Alles op je Mac, waaronder opnemen en transcriberen, blijft werken; AI-verzoeken, Revinote-sync, foutmeldingen en updates stoppen.':
+    'Everything on your Mac, including recording and transcription, keeps working; AI requests, Revinote sync, error reports, and updates stop.',
+  'Technische foutmeldingen': 'Technical error reports',
+  'Stuur technische foutinformatie naar Sentry, zonder opnames, transcripties of prompts.':
+    'Send technical error information to Sentry, without recordings, transcripts, or prompts.',
   'Automatische updates': 'Automatic updates',
   'Controleer en download nieuwe versies automatisch.': 'Automatically check for and download new versions.',
   'Open instellingen': 'Open settings',

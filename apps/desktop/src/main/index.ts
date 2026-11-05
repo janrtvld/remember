@@ -159,7 +159,7 @@ function useRememberUserData() {
 
 useRememberUserData()
 app.setName(PRODUCT_NAME)
-initializeErrorReporting(!getSettings().offlineMode)
+initializeErrorReporting(getSettings().errorReportingEnabled && !getSettings().offlineMode)
 const ownsSingleInstanceLock = app.requestSingleInstanceLock()
 const dataLock = ownsSingleInstanceLock ? acquireRememberDataLock(app.getPath('userData')) : null
 const ownsRuntime = ownsSingleInstanceLock && dataLock != null
@@ -497,7 +497,7 @@ async function applyOfflineModePolicy(offlineMode: boolean) {
   setForcedOfflineMode(offlineMode)
   syncOfflineModeSentinel(offlineMode)
   applyOfflineUpdatePolicy(offlineMode)
-  const errorReportingUpdate = setErrorReportingEnabled(!offlineMode)
+  setErrorReportingEnabled(getSettings().errorReportingEnabled && !offlineMode)
   if (offlineMode) {
     cancelNetworkRequests()
     cancelDownload()
@@ -505,7 +505,6 @@ async function applyOfflineModePolicy(offlineMode: boolean) {
   } else {
     void syncRevinote({ force: true }).catch(() => undefined)
   }
-  await errorReportingUpdate
   refreshTray()
 }
 
@@ -614,6 +613,7 @@ async function startApplication() {
     const previousSettings = getSettings()
     const previousOfflineMode = isOfflineMode()
     const settings = updateSettings(patch)
+    setErrorReportingEnabled(settings.errorReportingEnabled && !settings.offlineMode)
     await recordOfflineModeTransitionOrFailClosed(previousOfflineMode, settings.offlineMode)
     if ('offlineMode' in patch) await applyOfflineModePolicy(settings.offlineMode)
     if ('automaticUpdates' in patch) applyAutomaticUpdatePolicy(settings.automaticUpdates)
@@ -633,6 +633,7 @@ async function startApplication() {
     }
     const previousOfflineMode = isOfflineMode()
     const settings = repairSettings(action)
+    setErrorReportingEnabled(settings.errorReportingEnabled && !settings.offlineMode)
     await recordOfflineModeTransitionOrFailClosed(previousOfflineMode, settings.offlineMode)
     await applyOfflineModePolicy(settings.offlineMode)
     await refreshDailyReviewSetup()
