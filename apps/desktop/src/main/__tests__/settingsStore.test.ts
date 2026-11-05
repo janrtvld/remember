@@ -25,6 +25,31 @@ async function temporarySettingsDirectory() {
 }
 
 describe('settingsStore', () => {
+  it('starts with opt-in AI features and a 15-minute interval while preserving saved choices', async () => {
+    const directory = await temporarySettingsDirectory()
+    const initial = readSettingsAt(directory).settings
+    assert.equal(initial.liveTaskUpdates, false)
+    assert.equal(initial.agentLearningEnabled, false)
+    assert.equal(initial.cloudAnalysisConsent, false)
+    assert.equal(initial.frequentDayRefreshIntervalMinutes, 15)
+
+    createCachedSettingsStore().update(
+      directory,
+      {
+        liveTaskUpdates: true,
+        agentLearningEnabled: true,
+        cloudAnalysisConsent: true,
+        frequentDayRefreshIntervalMinutes: 10,
+      },
+      Date.now()
+    )
+    const restarted = createCachedSettingsStore().get(directory)
+    assert.equal(restarted.liveTaskUpdates, true)
+    assert.equal(restarted.agentLearningEnabled, true)
+    assert.equal(restarted.cloudAnalysisConsent, true)
+    assert.equal(restarted.frequentDayRefreshIntervalMinutes, 10)
+  })
+
   it('starts new profiles on GPT-6.1 Sol and Sonnet while preserving existing model choices', async () => {
     const directory = await temporarySettingsDirectory()
     const initial = readSettingsAt(directory).settings

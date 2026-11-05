@@ -90,7 +90,7 @@ export const CODEX_ANALYSIS_MODELS = [DEFAULT_CODEX_ANALYSIS_MODEL, 'gpt-5.6-ter
 export const CLAUDE_ANALYSIS_MODELS = ['sonnet', 'opus', 'haiku'] as const
 export const CODEX_ANALYSIS_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'] as const
 export const CLAUDE_ANALYSIS_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
-export const DEFAULT_FREQUENT_DAY_REFRESH_INTERVAL_MINUTES = 10
+export const DEFAULT_FREQUENT_DAY_REFRESH_INTERVAL_MINUTES = 15
 export const MIN_FREQUENT_DAY_REFRESH_INTERVAL_MINUTES = 1
 export const MAX_FREQUENT_DAY_REFRESH_INTERVAL_MINUTES = 24 * 60
 
