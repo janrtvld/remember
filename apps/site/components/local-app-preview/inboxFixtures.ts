@@ -177,7 +177,7 @@ export function createPreviewInboxItems(locale: SiteLocale, now = Date.now()): W
       source: {
         kind: 'manual',
         label: ['Zelf toegevoegd', 'Added manually'],
-        detail: ['Door jou aan de Inbox toegevoegd.', 'Added to the Inbox by you.'],
+        detail: ['Door jou toegevoegd aan Taken.', 'Added to Tasks by you.'],
       },
       ageMinutes: 240,
       dueAt: null,
@@ -188,7 +188,7 @@ export function createPreviewInboxItems(locale: SiteLocale, now = Date.now()): W
         unresolved: ['Support gebruikt nog de oude succesboodschap.', 'Support still uses the old success message.'],
         nextMove: ['Deel de nieuwe zin in het supportkanaal.', 'Share the new sentence in the support channel.'],
       },
-      activity: ['Door jou toegevoegd aan Inbox', 'Added to the Inbox by you'],
+      activity: ['Door jou toegevoegd aan Taken', 'Added to Tasks by you'],
     },
   ]
 
@@ -209,7 +209,7 @@ export function createManualPreviewWorkItem(
       source: {
         kind: 'manual',
         label: ['Zelf toegevoegd', 'Added manually'],
-        detail: ['Door jou aan de Inbox toegevoegd.', 'Added to the Inbox by you.'],
+        detail: ['Door jou toegevoegd aan Taken.', 'Added to Tasks by you.'],
       },
       ageMinutes: 1,
       dueAt: null,
@@ -220,7 +220,7 @@ export function createManualPreviewWorkItem(
         unresolved: [input.description, input.description],
         nextMove: ['Pak het actiepunt op wanneer het uitkomt.', 'Pick up the action item when it fits.'],
       },
-      activity: ['Door jou toegevoegd aan Inbox', 'Added to the Inbox by you'],
+      activity: ['Door jou toegevoegd aan Taken', 'Added to Tasks by you'],
     },
     now
   )

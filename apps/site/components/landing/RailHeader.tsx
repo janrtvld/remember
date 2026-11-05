@@ -1,7 +1,8 @@
 import { ArrowRight as IconArrowRight } from 'lucide-react'
+import { Github as IconGithub } from 'lucide-react'
 import { type SiteLocale, siteText } from '../../lib/locale-shared'
 import { DownloadButton } from '../DownloadButton'
-import { Logo } from '../ui'
+import { Button, Logo } from '../ui'
 import './rail-header.css'
 
 export function RailHeader({ locale }: { locale: SiteLocale }) {
@@ -27,6 +28,17 @@ export function RailHeader({ locale }: { locale: SiteLocale }) {
           </div>
         </div>
         <div className="rail-header-actions">
+          <Button
+            href="https://github.com/janrtvld/remember"
+            target="_blank"
+            rel="noopener noreferrer"
+            size="small"
+            variant="secondary"
+            className="rail-header-github"
+          >
+            <IconGithub className="size-[18px]" aria-hidden="true" />
+            <span className="sr-only">{siteText(locale, 'Remember op GitHub', 'Remember on GitHub')}</span>
+          </Button>
           <DownloadButton size="small" variant="secondary" className="rail-header-download">
             Download <IconArrowRight className="size-4" />
           </DownloadButton>

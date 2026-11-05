@@ -208,7 +208,7 @@ export function InboxPreviewView({ onOpenSource }: { onOpenSource: (kind: 'meeti
               <ol className="flex min-w-0 items-center text-slate-800 text-sm">
                 <li className="shrink-0">
                   <span aria-current="page" className="flex h-7 items-center px-2 font-medium">
-                    Inbox
+                    {t('Taken', 'Tasks')}
                   </span>
                 </li>
               </ol>
@@ -267,7 +267,7 @@ export function InboxPreviewView({ onOpenSource }: { onOpenSource: (kind: 'meeti
         {selected ? (
           <div className="grid min-h-0 grow grid-cols-[minmax(17rem,21rem)_minmax(0,1fr)] bg-white">
             <section
-              aria-label="Inbox"
+              aria-label={t('Taken', 'Tasks')}
               className="custom-scrollbar custom-scrollbar-auto-gutter flex min-h-0 min-w-0 flex-col overflow-y-auto border-r border-black/[0.07]"
             >
               <ol className="ml-px min-w-0 divide-y divide-black/[0.05]">

@@ -14,7 +14,7 @@ export function landingTitle(locale: SiteLocale) {
   return siteText(
     locale,
     'Remember - het systeem dat je werk onthoudt',
-    'Remember - The system for work that remembers'
+    'Remember - The system that remembers your work'
   )
 }
 

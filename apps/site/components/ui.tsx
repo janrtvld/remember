@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import type { MouseEventHandler, PropsWithChildren, ReactNode } from 'react'
+import type { HTMLAttributeAnchorTarget, MouseEventHandler, PropsWithChildren, ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export const DOWNLOAD_URL = 'https://github.com/janrtvld/remember/releases/latest/download/Remember-arm64.dmg'
@@ -25,6 +25,8 @@ export function Button({
   size = 'large',
   className,
   onClick,
+  target,
+  rel,
 }: {
   children: ReactNode
   href: string
@@ -33,10 +35,14 @@ export function Button({
   size?: 'small' | 'large'
   className?: string
   onClick?: MouseEventHandler<HTMLAnchorElement>
+  target?: HTMLAttributeAnchorTarget
+  rel?: string
 }) {
   return (
     <Link
       href={href}
+      target={target}
+      rel={rel}
       aria-disabled={disabled || undefined}
       onClick={onClick}
       className={twMerge(

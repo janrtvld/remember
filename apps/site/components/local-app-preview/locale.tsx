@@ -6,10 +6,12 @@ import type { SiteLocale } from '../../lib/locale-shared'
 
 const previewEnglish: Record<string, string> = {
   Werkdagen: 'Workdays',
+  Taken: 'Tasks',
+  'Mijn dag': 'My Day',
   Gesprekken: 'Conversations',
   Activiteit: 'Activity',
   Instellingen: 'Settings',
-  Privacy: 'Controls',
+  Privacy: 'Privacy',
   Spaces: 'Spaces',
   Productteam: 'Product team',
   Klantonderzoek: 'Customer research',

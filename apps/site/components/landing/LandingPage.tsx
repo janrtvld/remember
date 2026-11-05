@@ -1,5 +1,4 @@
 import { ArrowRight as IconArrowRight } from 'lucide-react'
-import Image from 'next/image'
 import { type SiteLocale, siteText } from '../../lib/locale-shared'
 import { DownloadButton } from '../DownloadButton'
 import { Faqs } from '../Faqs'
@@ -8,6 +7,7 @@ import { LocalAppPreview } from '../LocalAppPreview'
 import { FeatureSections } from './FeatureSections'
 import { RailHeader } from './RailHeader'
 import './landing-grid.css'
+import './hero-intro.css'
 
 function Cross({ className }: { className: string }) {
   return <span aria-hidden="true" className={`grid-cross ${className}`} />
@@ -19,37 +19,31 @@ function SectionSpacer() {
 
 function HeroCopy({ locale }: { locale: SiteLocale }) {
   return (
-    <div className="flex min-w-0 flex-col items-center gap-6 text-center">
-      <h1 className="font-marketing max-w-4xl text-balance text-[44px] font-[650] leading-[1.12] tracking-tight text-[#272727] sm:text-4xl sm:leading-[1.13] lg:text-5xl">
-        {siteText(locale, 'Het systeem dat', 'The system for work')}{' '}
-        <span className="block">
-          {siteText(locale, 'je werk ', 'that ')}
-          <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'var(--hero-text-gradient)' }}>
-            {siteText(locale, 'onthoudt', 'remembers')}
-          </span>
+    <div className="landing-hero-copy">
+      <h1 className="font-marketing" id="hero-title">
+        <span className="hero-blur inline-block">{siteText(locale, 'Het systeem dat', 'The system that')}</span>
+        <span className="landing-hero-accent hero-blur" style={{ animationDelay: '90ms' }}>
+          {siteText(locale, 'je werk onthoudt', 'remembers your work')}
         </span>
       </h1>
-      <p className="max-w-xl text-pretty text-base font-medium leading-relaxed text-slate-600 md:text-lg">
-        {siteText(
-          locale,
-          'Remember maakt van al je werk een levend geheugen waar je altijd op kunt terugvallen.',
-          'Remember turns your work into a living memory you can always return to.'
-        )}
-      </p>
-      <div className="flex flex-col items-center gap-3">
-        <DownloadButton size="small" className="min-h-11 px-5 text-base">
-          {siteText(locale, 'Download voor Mac', 'Download for Mac')} <IconArrowRight className="size-4" />
-        </DownloadButton>
-        <p className="text-[11px] font-medium leading-5 text-slate-500">
-          {siteText(locale, 'Remember is in beta.', 'Remember is currently in beta.')}{' '}
-          <span className="inline-flex items-center gap-1 whitespace-nowrap align-baseline">
-            {siteText(locale, 'Werkt met Codex en Claude', 'Works w/ Codex and Claude')}
-            <span className="inline-flex items-center gap-0.5" aria-hidden="true">
-              <Image src="/brand/codex-monochrome.svg" width={16} height={16} alt="" className="opacity-50" />
-              <Image src="/brand/claude-monochrome.svg" width={12} height={12} alt="" className="opacity-50" />
-            </span>
-          </span>
+      <div className="landing-hero-details">
+        <p className="hero-blur font-medium" style={{ animationDelay: '180ms' }}>
+          {siteText(
+            locale,
+            'Remember maakt van al je werk een levend geheugen waar je altijd op kunt terugvallen.',
+            'Remember turns your work into a living memory you can always return to.'
+          )}
         </p>
+        <div className="landing-hero-actions hero-blur" style={{ animationDelay: '260ms' }}>
+          <a href="#features" className="landing-hero-link">
+            {siteText(locale, 'Zo werkt het', 'How it works')}
+            <IconArrowRight className="size-3.5" aria-hidden="true" />
+          </a>
+          <DownloadButton size="small" className="min-h-11 px-5 text-base">
+            {siteText(locale, 'Download voor Mac', 'Download for Mac')}
+            <IconArrowRight className="size-4" aria-hidden="true" />
+          </DownloadButton>
+        </div>
       </div>
     </div>
   )
@@ -65,7 +59,10 @@ function ProductPreview({ locale }: { locale: SiteLocale }) {
       <Cross className="-left-px top-0" />
       <Cross className="-right-px top-0" />
       <div className="product-preview-framing p-3 sm:p-4">
-        <div className="product-preview-window overflow-hidden rounded-xl border border-[var(--grid-line)] bg-slate-50 shadow-soft">
+        <div
+          className="product-preview-window hero-dash overflow-hidden rounded-xl border border-[var(--grid-line)] bg-slate-50 shadow-soft"
+          style={{ animationDelay: '380ms' }}
+        >
           <div
             role="region"
             aria-label={siteText(locale, 'Productdemo', 'Product demo')}
@@ -119,19 +116,17 @@ function Closing({ locale }: { locale: SiteLocale }) {
 export function LandingPage({ locale }: { locale: SiteLocale }) {
   return (
     <div className="landing-grid min-h-screen min-w-0 overflow-x-clip">
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: Fixed first-paint session guard, matching the Revinote hero.
+        dangerouslySetInnerHTML={{
+          __html:
+            "try{if(sessionStorage.getItem('remember-intro-seen')){document.documentElement.classList.add('intro-seen')}else{sessionStorage.setItem('remember-intro-seen','1')}}catch(e){}",
+        }}
+      />
       <RailHeader locale={locale} />
       <main className="mx-auto max-w-[1200px] border-x border-[var(--grid-line)]">
-        <section className="square-grid square-inset has-side-columns">
-          <div aria-hidden="true" className="square-lattice" />
-          <div aria-hidden="true" className="square-side-column square-side-column-start" />
-          <div aria-hidden="true" className="square-side-column square-side-column-end" />
-          <div className="square-copy">
-            <Cross className="-left-px -top-px" />
-            <Cross className="-right-px -top-px" />
-            <Cross className="-left-px -bottom-px" />
-            <Cross className="-right-px -bottom-px" />
-            <HeroCopy locale={locale} />
-          </div>
+        <section className="landing-hero" aria-labelledby="hero-title">
+          <HeroCopy locale={locale} />
         </section>
         <ProductPreview locale={locale} />
         <FeatureSections locale={locale} />

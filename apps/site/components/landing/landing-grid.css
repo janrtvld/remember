@@ -53,6 +53,124 @@
   margin-top: 0;
 }
 
+.landing-grid .landing-hero {
+  padding: 96px 32px 32px;
+}
+
+.landing-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.landing-hero h1 {
+  color: oklch(var(--neutral-900));
+  font-size: 68px;
+  font-weight: 600;
+  line-height: 1.13;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.landing-hero-accent {
+  display: block;
+  width: fit-content;
+  background: linear-gradient(90deg, #0b63ee 0%, #3b82f6 100%);
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-hero-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.landing-hero-details > p {
+  min-width: 0;
+  flex: 1;
+  color: oklch(var(--neutral-600));
+  font-size: 16px;
+  line-height: 25px;
+  text-wrap: pretty;
+}
+
+.landing-hero-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.landing-hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: oklch(var(--neutral-600));
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.landing-hero-link:hover {
+  color: oklch(var(--neutral-900));
+}
+
+.landing-hero-link:focus-visible {
+  outline: 2px solid oklch(var(--neutral-500));
+  outline-offset: 5px;
+  border-radius: 4px;
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .landing-grid .landing-hero {
+    padding: 96px 16px 32px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1199px) {
+  .landing-hero-details {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .landing-hero-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 899px) {
+  .landing-hero h1 {
+    font-size: clamp(56px, 7.4vw, 66px);
+  }
+}
+
+@media (max-width: 639px) {
+  .landing-grid .landing-hero {
+    padding: 96px 16px 32px;
+    text-align: center;
+  }
+
+  .landing-hero h1 {
+    font-size: clamp(32px, 11.3vw, 44px);
+    line-height: 1.12;
+  }
+
+  .landing-hero-accent {
+    width: auto;
+  }
+
+  .landing-hero-details {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
 .landing-grid .product-preview-canvas {
   width: 1166px;
 }

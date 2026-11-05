@@ -6,6 +6,7 @@ import {
   DEFAULT_FREQUENT_DAY_REFRESH_INTERVAL_MINUTES,
 } from '@remember/shared'
 import {
+  Bot as IconAiBotHead,
   ArrowRight as IconArrowRight,
   RotateCw as IconArrowRotateClockwise,
   MessagesSquare as IconBubbles,
@@ -36,6 +37,7 @@ import { useEffect, useRef, useState } from 'react'
 import { FilledSpaceIcon } from '../../web/ui/FilledSpaceIcon'
 import { TerminalIcon } from '../../web/ui/LucideAnimated'
 import type { SiteLocale } from '../lib/locale-shared'
+import { AssistantPreviewView } from './local-app-preview/AssistantPreviewView'
 import { PreviewLocaleProvider, usePreviewText } from './local-app-preview/locale'
 import { PreviewDropdownSelect } from './local-app-preview/PreviewDropdownSelect'
 
@@ -43,8 +45,8 @@ const InboxPreviewView = dynamic(() =>
   import('./local-app-preview/InboxPreviewView').then((module) => module.InboxPreviewView)
 )
 
-type View = 'inbox' | 'today' | 'conversations' | 'wiki' | 'agent' | 'exclusions' | 'settings'
-type DayTab = 'overview' | 'conversations' | 'timeline' | 'spaces'
+type View = 'inbox' | 'today' | 'conversations' | 'wiki' | 'assistant' | 'agent' | 'exclusions' | 'settings'
+type DayTab = 'overview' | 'conversations' | 'timeline'
 type PreviewWikiSpace = 'personal' | 'product' | 'research'
 type RecordingState = 'idle' | 'recording' | 'processing'
 
@@ -78,9 +80,10 @@ const primaryNavigation: Array<{
   label: string
   icon: ComponentType<{ className?: string; mode?: 'masked' | 'raw' }>
 }> = [
-  { id: 'inbox', label: 'Inbox', icon: IconInbox },
-  { id: 'today', label: 'Werkdagen', icon: IconCalendarDays },
+  { id: 'inbox', label: 'Taken', icon: IconInbox },
+  { id: 'today', label: 'Mijn dag', icon: IconCalendarDays },
   { id: 'conversations', label: 'Gesprekken', icon: IconBubbles },
+  { id: 'assistant', label: 'Agent', icon: IconAiBotHead },
 ]
 
 const settingsNavigation: typeof primaryNavigation = [
@@ -468,11 +471,6 @@ function LocalAppPreviewContent() {
                   setConversation(index)
                   setView('conversations')
                 }}
-                onSpace={(space) => {
-                  setActiveWikiSpace(space)
-                  setView('wiki')
-                }}
-                onStartRecording={startRecording}
               />
             ) : null}
             {view === 'conversations' ? (
@@ -485,6 +483,7 @@ function LocalAppPreviewContent() {
               />
             ) : null}
             {view === 'wiki' ? <WikiView key={activeWikiSpace} space={activeWikiSpace} /> : null}
+            {view === 'assistant' ? <AssistantPreviewView /> : null}
             {view === 'agent' ? <AgentView /> : null}
             {view === 'exclusions' ? <ExclusionsView /> : null}
             {view === 'settings' ? <SettingsView /> : null}
@@ -524,21 +523,23 @@ function PreviewSidebar({
 }) {
   const { t } = usePreviewText()
   return (
-    <aside className="relative flex h-full w-[220px] shrink-0 flex-col px-2 pb-3 pt-[38px]">
-      <div className="absolute left-4 top-[11px] flex items-center gap-2" aria-hidden="true">
-        <span className="size-3 rounded-full bg-[#ff5f57]" />
-        <span className="size-3 rounded-full bg-[#febc2e]" />
-        <span className="size-3 rounded-full bg-[#28c840]" />
+    <aside className="preview-sidebar relative flex h-full w-[220px] shrink-0 flex-col px-2 pb-3 pt-[38px]">
+      <div className="absolute left-4 top-0 flex h-9 items-center gap-2.5">
+        <div className="flex items-center gap-2" aria-hidden="true">
+          <span className="size-3 rounded-full bg-[#ff5f57]" />
+          <span className="size-3 rounded-full bg-[#febc2e]" />
+          <span className="size-3 rounded-full bg-[#28c840]" />
+        </div>
+        <fieldset className="flex h-9 items-center gap-0.5">
+          <legend className="sr-only">{t('Paginanavigatie', 'Page navigation')}</legend>
+          <CompactButton label={t('Ga terug', 'Go back')} onClick={() => undefined} disabled size="compact">
+            <IconChevronLeft className="size-3.5 text-slate-500" />
+          </CompactButton>
+          <CompactButton label={t('Ga vooruit', 'Go forward')} onClick={() => undefined} disabled size="compact">
+            <IconChevronRight className="size-3.5 text-slate-500" />
+          </CompactButton>
+        </fieldset>
       </div>
-      <fieldset className="absolute left-[78px] top-[3px] flex h-9 items-center gap-0.5">
-        <legend className="sr-only">{t('Paginanavigatie', 'Page navigation')}</legend>
-        <CompactButton label={t('Ga terug', 'Go back')} onClick={() => undefined} disabled size="compact">
-          <IconChevronLeft className="size-3.5 text-slate-300" />
-        </CompactButton>
-        <CompactButton label={t('Ga vooruit', 'Go forward')} onClick={() => undefined} disabled size="compact">
-          <IconChevronRight className="size-3.5 text-slate-300" />
-        </CompactButton>
-      </fieldset>
       <div className="flex h-9 w-full items-center justify-between gap-2 pl-2.5">
         <Image src="/wordmark.svg" width={5108} height={710} alt="Remember" loading="eager" className="h-3 w-auto" />
         <CompactButton label={t('Zoek', 'Search')} onClick={onSearch}>
@@ -620,7 +621,7 @@ function PreviewSidebarGroup({
             onClick={onAction}
             aria-label={actionLabel}
             title={actionLabel}
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-slate-500 opacity-0 outline-none transition-[color,opacity] duration-150 hover:text-slate-800 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-slate-500 group-hover:opacity-100"
+            className="flex size-7 shrink-0 items-center justify-center rounded-md text-slate-500 outline-none transition-colors duration-150 hover:bg-slate-200/60 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-500"
           >
             <IconPlusSmall className="size-4" />
           </button>
@@ -849,16 +850,16 @@ function PreviewDayCalendarPicker({ dayOffset, onDay }: { dayOffset: number; onD
   )
 }
 
-function PreviewTabs({
+function PreviewTabs<T extends string>({
   label,
   tabs,
   active,
   onChange,
 }: {
   label: string
-  tabs: { id: string; label: string }[]
-  active: string
-  onChange: (id: string) => void
+  tabs: { id: T; label: string }[]
+  active: T
+  onChange: (id: T) => void
 }) {
   return (
     <nav className="-mx-0.5 -mt-2 overflow-x-auto overflow-y-hidden border-b border-slate-200" aria-label={label}>
@@ -903,21 +904,17 @@ function TodayView({
   processingConversation,
   onTab,
   onConversation,
-  onSpace,
-  onStartRecording,
 }: {
   tab: DayTab
   processingConversation: boolean
   onTab: (tab: DayTab) => void
   onConversation: (index: number) => void
-  onSpace: (space: PreviewWikiSpace) => void
-  onStartRecording: () => void
 }) {
   const [dayOffset, setDayOffset] = useState(0)
 
   return (
     <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
-      <div className="mx-auto grid w-full max-w-[800px] gap-8 px-4 py-8 sm:px-6 md:py-12 lg:px-8">
+      <div className="preview-day-content mx-auto grid w-full max-w-[800px] gap-8 px-8 py-12">
         <DayContent
           tab={tab}
           dayOffset={dayOffset}
@@ -925,8 +922,6 @@ function TodayView({
           processingConversation={processingConversation}
           onTab={onTab}
           onConversation={onConversation}
-          onSpace={onSpace}
-          onStartRecording={onStartRecording}
         />
       </div>
     </div>
@@ -940,8 +935,6 @@ function DayContent({
   processingConversation,
   onTab,
   onConversation,
-  onSpace,
-  onStartRecording,
 }: {
   tab: DayTab
   dayOffset: number
@@ -949,8 +942,6 @@ function DayContent({
   processingConversation: boolean
   onTab: (tab: DayTab) => void
   onConversation: (index: number) => void
-  onSpace: (space: PreviewWikiSpace) => void
-  onStartRecording: () => void
 }) {
   const { t } = usePreviewText()
   const [refreshing, setRefreshing] = useState(false)
@@ -958,7 +949,6 @@ function DayContent({
     ['overview', t('Overzicht', 'Overview')],
     ['conversations', t('Gesprekken')],
     ['timeline', t('Tijdlijn', 'Timeline')],
-    ['spaces', t('Spaces')],
   ]
   return (
     <>
@@ -966,7 +956,7 @@ function DayContent({
         <PreviewDayCalendarPicker dayOffset={dayOffset} onDay={onDay} />
         <div className="mt-1 flex items-center gap-1 text-xs text-slate-500 tabular-nums">
           <span>
-            {refreshing ? t('Wordt bijgewerkt…', 'Updating…') : t('Bijgewerkt tot 16:32', 'Updated through 16:32')}
+            {refreshing ? t('Wordt bijgewerkt…', 'Updating…') : t('Bijgewerkt tot 16:32', 'Updated through 04:32 PM')}
           </span>
           {dayOffset === 0 ? (
             <CompactButton
@@ -990,27 +980,17 @@ function DayContent({
           ) : null}
         </div>
       </header>
-      <nav
-        className="-mx-0.5 -mt-4 flex gap-5 overflow-y-hidden overflow-x-auto border-b border-slate-200"
-        aria-label={t('Onderdelen van de dag', 'Day sections')}
-      >
-        {tabs.map(([id, label]) => (
-          <button
-            type="button"
-            key={id}
-            onClick={() => onTab(id)}
-            className={`relative min-h-10 shrink-0 px-0.5 font-medium text-ui outline-none after:absolute after:inset-x-0.5 after:-bottom-px after:h-[2.5px] after:rounded-full hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400 ${tab === id ? 'text-slate-900 after:bg-blue-700' : 'text-slate-500 after:bg-transparent'}`}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <PreviewTabs
+        label={t('Onderdelen van de dag', 'Day sections')}
+        tabs={tabs.map(([id, label]) => ({ id, label }))}
+        active={tab}
+        onChange={onTab}
+      />
       {tab === 'overview' ? <Overview /> : null}
       {tab === 'conversations' ? (
         <DayConversations processing={processingConversation} onSelect={onConversation} />
       ) : null}
       {tab === 'timeline' ? <Timeline /> : null}
-      {tab === 'spaces' ? <DaySpaceSuggestions onOpen={onSpace} /> : null}
     </>
   )
 }
@@ -1018,29 +998,30 @@ function DayContent({
 function Overview() {
   const { locale, t } = usePreviewText()
   const projects = [
-    ['Onboarding refresh', '4u 13m', '63%', 'bg-[oklch(var(--categorical-purple))]'],
-    ['Releasevoorbereiding', '1u 36m', '24%', 'bg-[oklch(var(--categorical-teal))]'],
-    ['Support en planning', '53m', '13%', 'bg-[oklch(var(--categorical-green))]'],
+    ['Onboarding refresh', '2u 18m', '57.5%', 'bg-[oklch(var(--categorical-purple))]'],
+    ['Releasevoorbereiding', '1u 30m', '37.5%', 'bg-[oklch(var(--categorical-teal))]'],
+    ['Support en planning', '6m', '4%', 'bg-[oklch(var(--categorical-green))]'],
+    ['Klantonderzoek', '6m', '4%', 'bg-[oklch(var(--categorical-yellow))]'],
   ]
   return (
     <div className="grid gap-6 pb-4">
       <section>
         <h3 className="text-lg font-semibold text-slate-950">{t('Overzicht', 'Overview')}</h3>
-        <p className="mt-3  text-ui leading-6 text-slate-700">
+        <p className="mt-4 text-ui leading-6 text-slate-800">
           {t(
-            'De onboardingrefresh is inhoudelijk afgerond en blijft op koers voor donderdag. In de productsync is besloten de begeleide lege staat nu uit te rollen en uitgebreidere analytics pas na de eerste week te beoordelen. Na de middagreview zijn de laatste copywijzigingen verwerkt; de definitieve flow en rolloutnotitie moeten nog worden gedeeld.',
-            'The onboarding refresh is complete and remains on track for Thursday. In the product sync, the team decided to ship the guided empty state now and evaluate deeper analytics after the first week. The final copy changes are in; the definitive flow and rollout note still need to be shared.'
+            'De onboardingrefresh is inhoudelijk afgerond en blijft op koers voor donderdag. In de productsync is besloten de begeleide lege staat nu uit te rollen en uitgebreidere analytics pas na de eerste week te beoordelen. De terugknop blijft zichtbaar tijdens de toestemmingsstap en de succesboodschap verwijst naar het eerste dagoverzicht. Elena doet morgenochtend de laatste review. Sam werkt de rolloutnotitie bij met activatie en voltooiing als eerste meetpunten. De definitieve flow en de gedeelde uitleg voor support moeten nog worden gedeeld.',
+            'The onboarding refresh reached a useful milestone: the team reviewed the final flow and kept the release on track for Thursday. In the product sync, you agreed to ship the guided empty state now and evaluate deeper analytics after the first week. The back button stays visible during the permission step, and the success message points to the first daily overview. Elena will review the final flow tomorrow morning. Sam is updating the rollout note with activation and completion as the first metrics. The final flow and shared support copy still need to be sent.'
           )}
         </p>
       </section>
       <section className="border-t border-black/[0.08] pt-6">
         <h3 className="text-lg font-semibold text-slate-950">{t('Aandacht', 'Attention')}</h3>
-        <div className="mt-5 grid gap-4">
+        <div className="mt-6 grid gap-5">
           {projects.map(([name, duration, width, color]) => (
             <div key={name}>
               <div className="mb-2 flex justify-between gap-4 text-ui">
                 <span className="font-medium text-slate-800">{t(name)}</span>
-                <span className="text-xs text-slate-400 tabular-nums">
+                <span className="text-xs text-slate-600 tabular-nums">
                   {locale === 'nl' ? duration : duration.replace('u ', 'h ')}
                 </span>
               </div>
@@ -1050,7 +1031,7 @@ function Overview() {
             </div>
           ))}
         </div>
-        <section className="mt-6 border-t border-black/[0.08] pt-6" aria-labelledby="preview-results-heading">
+        <section className="mt-8 border-t border-black/[0.08] pt-6" aria-labelledby="preview-results-heading">
           <h3 id="preview-results-heading" className="text-lg font-semibold text-slate-950">
             {t('Resultaten', 'Outcomes')}
           </h3>
@@ -1110,58 +1091,6 @@ function PreviewConversationList({ onSelect }: { onSelect: (index: number) => vo
           </li>
         ))}
       </ol>
-    </section>
-  )
-}
-
-function DaySpaceSuggestions({ onOpen }: { onOpen: (space: PreviewWikiSpace) => void }) {
-  const { t } = usePreviewText()
-  const suggestions: Array<{
-    space: PreviewWikiSpace
-    title: string
-    englishTitle: string
-    detail: string
-    englishDetail: string
-  }> = [
-    {
-      space: 'product',
-      title: 'Onboardinguitrol bijwerken',
-      englishTitle: 'Update onboarding rollout',
-      detail: 'Nieuwe besluiten uit de productsync',
-      englishDetail: 'New decisions from the product sync',
-    },
-    {
-      space: 'research',
-      title: 'Toestemmingspatroon aanvullen',
-      englishTitle: 'Add permission pattern',
-      detail: 'Onderbouwd door support en designreview',
-      englishDetail: 'Supported by research and design review',
-    },
-  ]
-  return (
-    <section className="grid gap-4" aria-labelledby="preview-space-suggestions">
-      <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white shadow-raised">
-        {suggestions.map((suggestion) => (
-          <li key={suggestion.title}>
-            <button
-              type="button"
-              onClick={() => onOpen(suggestion.space)}
-              className="group flex min-h-16 w-full items-center gap-3 px-3 py-2.5 text-left outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400"
-            >
-              <PreviewWikiSpaceBadge space={suggestion.space} className="size-9" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium text-ui text-slate-900">
-                  {t(suggestion.title, suggestion.englishTitle)}
-                </span>
-                <span className="mt-0.5 block truncate text-xs text-slate-500">
-                  {t(suggestion.detail, suggestion.englishDetail)}
-                </span>
-              </span>
-              <IconChevronRight className="size-3.5 shrink-0 text-slate-300 group-hover:text-slate-500 group-focus-visible:text-slate-500" />
-            </button>
-          </li>
-        ))}
-      </ul>
     </section>
   )
 }
@@ -1395,7 +1324,7 @@ function ConversationsView({
           <ol className="divide-y divide-slate-100">
             {fragments.map(([source, text], index) => (
               <li key={text}>
-                <div className="flex min-h-16 cursor-pointer items-start gap-3 px-4 py-3 hover:bg-slate-50">
+                <div className="flex min-h-16 items-start gap-3 px-4 py-3">
                   <span className="min-w-0">
                     <span className="block font-medium text-slate-500 text-xs">{t(source)}</span>
                     <span className="mt-1 block text-slate-700 text-sm leading-5">{t(text)}</span>
@@ -2822,16 +2751,12 @@ function PreviewSearch({ onClose, onNavigate }: { onClose: () => void; onNavigat
   const inputRef = useRef<HTMLInputElement>(null)
   useEffect(() => inputRef.current?.focus(), [])
   const items: Array<[View, string, string]> = [
-    ['inbox', 'Inbox', t('Actiepunten met hun concrete bron', 'Action items with their concrete source')],
-    ['today', t('Vandaag', 'Today'), t('Dagoverzicht en tijdlijn', 'Daily overview and timeline')],
+    ['inbox', t('Taken', 'Tasks'), t('Actiepunten met hun concrete bron', 'Action items with their concrete source')],
+    ['today', t('Mijn dag', 'My Day'), t('Dagoverzicht en tijdlijn', 'Daily overview and timeline')],
     ['conversations', t('Gesprekken'), t('Opnames en herkende gesprekken', 'Recordings and recognized conversations')],
-    [
-      'wiki',
-      t('Productontwikkeling', 'Product development'),
-      t('Projecten, besluiten en onderzoek', 'Projects, decisions, and research'),
-    ],
-    ['agent', 'Agent', t('Lokale context en recente acties', 'Local context and recent actions')],
-    ['exclusions', t('Privacy', 'Controls'), t('Apps en websites uitsluiten', 'Exclude apps and websites')],
+    ['wiki', t('Productontwikkeling', 'Product development'), t('Projecten, besluiten en onderzoek', 'Projects, decisions, and research')],
+    ['assistant', 'Agent', t('Vragen over je werk', 'Questions about your work')],
+    ['exclusions', t('Privacy'), t('Apps en websites uitsluiten', 'Exclude apps and websites')],
     ['settings', t('Instellingen'), t('Opstarten, bijwerken en opslag', 'Startup, updates, and storage')],
   ]
   const filtered = items.filter((item) => `${item[1]} ${item[2]}`.toLowerCase().includes(query.toLowerCase()))
@@ -2869,6 +2794,11 @@ function PreviewSearch({ onClose, onNavigate }: { onClose: () => void; onNavigat
             Esc
           </button>
         </label>
+        {filtered.length === 0 ? (
+          <p role="status" className="px-4 py-6 text-center text-sm text-slate-500">
+            {t('Geen resultaten.', 'No results.')}
+          </p>
+        ) : null}
         <ul className="p-1.5">
           {filtered.map(([id, title, description]) => (
             <li key={id}>

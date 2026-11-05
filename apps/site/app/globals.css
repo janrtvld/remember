@@ -126,29 +126,27 @@ body {
 
 .remember-dashboard-preview .text-ui {
   font-size: 13px;
-  line-height: 18px;
+  line-height: var(--tw-leading, 18px);
 }
 
 .remember-dashboard-preview .text-md {
   font-size: 14px;
-  line-height: 20px;
+  line-height: var(--tw-leading, 20px);
 }
 
 .remember-dashboard-preview .text-lg {
   font-size: 15px;
-  line-height: 22px;
+  line-height: var(--tw-leading, 22px);
 }
 
 .remember-dashboard-preview .text-xl {
   font-size: 20px;
-  line-height: 26px;
+  line-height: var(--tw-leading, 26px);
 }
 
-@media (min-width: 640px) {
-  .remember-dashboard-preview .sm\:text-2xl {
-    font-size: 24px;
-    line-height: 30px;
-  }
+.remember-dashboard-preview .sm\:text-2xl {
+  font-size: 24px;
+  line-height: var(--tw-leading, 30px);
 }
 
 ::selection {

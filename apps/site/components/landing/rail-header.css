@@ -69,16 +69,24 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 12px;
+  gap: 8px;
   margin-inline-start: auto;
 }
 
+.rail-header-github {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
+.rail-header-github,
 .rail-header-download {
   position: relative;
   white-space: nowrap;
 }
 
 .rail-header-link::before,
+.rail-header-github::before,
 .rail-header-download::before {
   content: "";
   position: absolute;

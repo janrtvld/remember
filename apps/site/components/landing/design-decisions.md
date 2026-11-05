@@ -1,5 +1,39 @@
 # Landing design decisions
 
+## Current hero and app preview — 2026-11-05
+
+- The requested Revinote hero structure replaces the inset lattice on the main
+  landing page: left-aligned two-line title, blue second line, and description
+  beside the secondary link and Mac download. Keep Remember's existing header,
+  copy, fonts, 1200px frame, and lower sections. The English title now reads
+  “The system that remembers your work.”
+- The supplied Remember My Day screenshot governs the UI inside the preview:
+  220px sidebar, 800px day container, app typography, current navigation, and
+  three day tabs. Use fictional demo content rather than the screenshot's
+  personal work. Do not show a profile avatar in the preview.
+- Keep the original preview dimensions and surroundings exactly: 1166 × 650
+  canvas, existing framing, border, corner radius, shadow, and cross marks.
+  Preserve the original phone crop and 50% scale. Do not resize the preview to
+  fit its frame. Hero actions wrap on the narrowest screens; title sizes
+  accommodate both languages. Hero subtext uses font-medium and the available
+  row width so it stays on one line when space allows. Stack actions below it
+  on narrower windows instead of squeezing the sentence beside them.
+- Browser comparison corrected the preview's overridden line height and stale
+  day tabs. Verify the assembled hero, navigation, sources, and mobile layout
+  when changing this surface. Older grid decisions below remain relevant to the
+  retained prototype pages and lower page frame, rather than the current hero.
+- The smaller side-by-side hero trial was rejected. Keep the preceding
+  Revinote-style hero with 600-weight title and font-medium subtext.
+- Match Revinote's entry sequence exactly: 400ms blur-and-rise text, delayed
+  by 0/90/180/260ms, followed by the 650ms preview entry after 380ms. Use the
+  same easing and transforms, skip repeated visits within the session, and
+  disable entry motion when reduced motion is preferred.
+- The Agent preview starts with the actual app's “Wat houdt je bezig?” heading
+  and centered composer. No separate title bar or suggested-question chips.
+  Keep the header actions 8px apart and hero top padding at 96px.
+
+## Earlier grid direction
+
 Selected on 2026-09-09 from the grid, artwork, and Memory entrance prototypes.
 The user chose Bare and asked to remove the prototype pages.
 
