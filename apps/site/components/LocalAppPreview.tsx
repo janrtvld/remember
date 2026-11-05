@@ -4,9 +4,9 @@ import {
   CLAUDE_ANALYSIS_MODELS,
   CODEX_ANALYSIS_MODELS,
   DEFAULT_FREQUENT_DAY_REFRESH_INTERVAL_MINUTES,
+  type WikiSpaceIcon,
 } from '@remember/shared'
 import {
-  Bot as IconAiBotHead,
   ArrowRight as IconArrowRight,
   RotateCw as IconArrowRotateClockwise,
   MessagesSquare as IconBubbles,
@@ -35,7 +35,7 @@ import Image from 'next/image'
 import type { ComponentType, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { FilledSpaceIcon } from '../../web/ui/FilledSpaceIcon'
-import { TerminalIcon } from '../../web/ui/LucideAnimated'
+import { AgentIcon, TerminalIcon } from '../../web/ui/LucideAnimated'
 import type { SiteLocale } from '../lib/locale-shared'
 import { AssistantPreviewView } from './local-app-preview/AssistantPreviewView'
 import { PreviewLocaleProvider, usePreviewText } from './local-app-preview/locale'
@@ -53,7 +53,7 @@ type RecordingState = 'idle' | 'recording' | 'processing'
 const previewWikiSpaceAppearances: Record<
   PreviewWikiSpace,
   {
-    icon: 'lock' | 'book'
+    icon: WikiSpaceIcon
     foreground: string
     surface: string
   }
@@ -69,7 +69,7 @@ const previewWikiSpaceAppearances: Record<
     surface: 'bg-[oklch(var(--categorical-green)/0.16)]',
   },
   research: {
-    icon: 'book',
+    icon: 'star',
     foreground: 'text-[oklch(var(--categorical-purple))]',
     surface: 'bg-[oklch(var(--categorical-purple)/0.16)]',
   },
@@ -83,7 +83,7 @@ const primaryNavigation: Array<{
   { id: 'inbox', label: 'Taken', icon: IconInbox },
   { id: 'today', label: 'Mijn dag', icon: IconCalendarDays },
   { id: 'conversations', label: 'Gesprekken', icon: IconBubbles },
-  { id: 'assistant', label: 'Agent', icon: IconAiBotHead },
+  { id: 'assistant', label: 'Agent', icon: AgentIcon },
 ]
 
 const settingsNavigation: typeof primaryNavigation = [

@@ -12,7 +12,7 @@ export function AssistantPreviewView() {
       <div className="relative my-auto w-full shrink-0">
         <div className="custom-scrollbar -my-3 overflow-y-hidden py-3" style={{ scrollbarGutter: 'stable both-edges' }}>
           <div className="mx-auto w-full max-w-[782px] px-4 pb-[52px]">
-            <h2 className="mb-6 text-center text-lg font-medium tracking-tight text-slate-900">
+            <h2 className="mb-6 text-center text-xl font-medium tracking-tight text-slate-900">
               {t('Wat houdt je bezig?', 'What’s on your mind?')}
             </h2>
             <div className="rounded-2xl border border-slate-300 bg-white p-2 shadow-[0_4px_20px_0_rgb(0_0_0/0.04)] focus-within:border-slate-400">
