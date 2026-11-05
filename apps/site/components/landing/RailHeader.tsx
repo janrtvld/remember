@@ -1,5 +1,4 @@
-import { ArrowRight as IconArrowRight } from 'lucide-react'
-import { Github as IconGithub } from 'lucide-react'
+import { ArrowRight as IconArrowRight, Github as IconGithub } from 'lucide-react'
 import { type SiteLocale, siteText } from '../../lib/locale-shared'
 import { DownloadButton } from '../DownloadButton'
 import { Button, Logo } from '../ui'

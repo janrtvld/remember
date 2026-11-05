@@ -2754,7 +2754,11 @@ function PreviewSearch({ onClose, onNavigate }: { onClose: () => void; onNavigat
     ['inbox', t('Taken', 'Tasks'), t('Actiepunten met hun concrete bron', 'Action items with their concrete source')],
     ['today', t('Mijn dag', 'My Day'), t('Dagoverzicht en tijdlijn', 'Daily overview and timeline')],
     ['conversations', t('Gesprekken'), t('Opnames en herkende gesprekken', 'Recordings and recognized conversations')],
-    ['wiki', t('Productontwikkeling', 'Product development'), t('Projecten, besluiten en onderzoek', 'Projects, decisions, and research')],
+    [
+      'wiki',
+      t('Productontwikkeling', 'Product development'),
+      t('Projecten, besluiten en onderzoek', 'Projects, decisions, and research'),
+    ],
     ['assistant', 'Agent', t('Vragen over je werk', 'Questions about your work')],
     ['exclusions', t('Privacy'), t('Apps en websites uitsluiten', 'Exclude apps and websites')],
     ['settings', t('Instellingen'), t('Opstarten, bijwerken en opslag', 'Startup, updates, and storage')],

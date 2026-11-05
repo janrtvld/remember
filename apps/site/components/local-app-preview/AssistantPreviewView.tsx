@@ -1,7 +1,6 @@
 'use client'
 
-import { ArrowUp as IconArrowUp } from 'lucide-react'
-import { Mic as IconMicrophone } from 'lucide-react'
+import { ArrowUp as IconArrowUp, Mic as IconMicrophone } from 'lucide-react'
 import { usePreviewText } from './locale'
 
 export function AssistantPreviewView() {

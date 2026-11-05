@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .node-version
-      - run: pnpm install --filter @remember/site... --filter remember --frozen-lockfile
+      - run: pnpm install --filter @remember/site... --filter @remember/web... --filter remember --frozen-lockfile
       - run: pnpm lint
       - run: pnpm --filter @remember/site types:check
       - name: Build production

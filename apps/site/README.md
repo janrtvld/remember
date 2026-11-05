@@ -61,7 +61,7 @@ Vercel project deletion and account/subscription cancellation are separate clean
 
 `.github/workflows/site-cloudflare.yml` deploys pushes to `main` to production and pushes to other repository branches to isolated Cloudflare Previews. PRs from these branches share their branch preview. Fork PRs do not receive deployment credentials. The preview URL is printed in the GitHub Actions run summary. Branch previews remain until removed in Cloudflare.
 
-GitHub Actions installs only the website and root tooling, runs lint and site type checks, then builds and deploys. Production additionally runs the hosted HTTP checks. Deployments are serialized per branch. All paths trigger builds because the website also imports components from `apps/web`.
+GitHub Actions installs the website, the web app dependencies needed by its shared UI imports, and root tooling, runs lint and site type checks, then builds and deploys. Production additionally runs the hosted HTTP checks. Deployments are serialized per branch. All paths trigger builds because the website also imports components from `apps/web`.
 
 The repository secret `CLOUDFLARE_SITE_API_TOKEN` is an account-owned Individual Workers Editor token scoped only to `remember-site`. Cloudflare native Workers Builds currently supports only user-owned tokens, which cannot have this granular scope, so GitHub Actions owns automation. The token cannot manage DNS, D1, or other Workers.
 
