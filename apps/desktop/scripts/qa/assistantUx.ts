@@ -17,6 +17,18 @@ export async function measureAssistantTyping(page: Page, directory: string) {
     .last()
     .getByRole('heading', { name: 'Workstream 60', exact: true })
     .waitFor()
+  await composer.fill('qa-cancel-no-approval')
+  await composer.press('Enter')
+  await page
+    .locator('[data-assistant-message]')
+    .last()
+    .getByRole('heading', { name: 'Notitie 14', exact: true })
+    .waitFor()
+  const streamingBefore = await page.evaluate(async () => {
+    const conversation = await window.remember.getAssistantConversation()
+    return { id: conversation.activeTurnId, length: conversation.messages.at(-1)?.text.length ?? 0 }
+  })
+  assert(streamingBefore.id && streamingBefore.length > 0, 'Measure a response that has started streaming')
   await composer.fill('')
   await page.evaluate(() => {
     const samples: number[] = []
@@ -59,7 +71,7 @@ export async function measureAssistantTyping(page: Page, directory: string) {
     const samples: number[] = [...result.samples].sort((a, b) => a - b)
     return {
       boundary:
-        'Input event to next animation frame in the fixture Electron renderer with retained chat history; not physical key-to-paint latency.',
+        'Input event to next animation frame during a growing response with a long retained chat history in fixture Electron; not physical key-to-paint latency.',
       characters: samples.length,
       medianMs: samples[Math.floor(samples.length / 2)],
       p95Ms: samples[Math.ceil(samples.length * 0.95) - 1],
@@ -68,7 +80,14 @@ export async function measureAssistantTyping(page: Page, directory: string) {
       focused: result.focused.every(Boolean),
     }
   })
-  writeFileSync(join(directory, 'assistant-typing-performance.json'), JSON.stringify(proof, null, 2))
+  const streamingAfter = await page.evaluate(async () => {
+    const conversation = await window.remember.getAssistantConversation()
+    return { id: conversation.activeTurnId, length: conversation.messages.at(-1)?.text.length ?? 0 }
+  })
+  writeFileSync(
+    join(directory, 'assistant-typing-performance.json'),
+    JSON.stringify({ ...proof, streamingBefore, streamingAfter }, null, 2)
+  )
   for (const colorScheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme })
     await page.screenshot({ path: join(directory, `assistant-chat-${colorScheme}.png`) })
@@ -77,6 +96,10 @@ export async function measureAssistantTyping(page: Page, directory: string) {
   assert.equal(proof.characters, text.length)
   assert(proof.focused, 'Typing measurements require a focused and visible native window')
   assert(proof.p95Ms <= 100, `Composer typing p95 ${proof.p95Ms}ms exceeds 100ms`)
+  assert.equal(streamingAfter.id, streamingBefore.id, 'Typing must not interrupt the response')
+  assert(streamingAfter.length > streamingBefore.length, 'The measured response must grow during typing')
+  await page.getByRole('button', { name: /^(Stoppen|Stop)$/ }).click()
+  await page.waitForFunction(async () => !(await window.remember.getAssistantConversation()).activeTurnId)
   await page.reload()
   await composer.waitFor({ state: 'visible' })
   assert.equal(await composer.inputValue(), text, 'Typing-only draft must survive renderer reload')

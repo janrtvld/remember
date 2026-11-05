@@ -32,6 +32,7 @@ import { AssistantProgress } from './AssistantProgress'
 import { AssistantMarkdownLink, AssistantReferenceCard } from './AssistantReferenceCard'
 import { AssistantSavedResults } from './AssistantSavedResults'
 import { AssistantTaskStatus } from './AssistantTaskStatus'
+import { reconcileAssistantConversation } from './assistantConversation'
 import { remarkAssistantReferences } from './assistantReferences'
 import {
   ASSISTANT_OUTBOX_LIMIT,
@@ -41,6 +42,7 @@ import {
   restoreAssistantSessionDraft,
   writeAssistantSession,
 } from './assistantSession'
+import { rehypeStreamingWords } from './assistantStreaming'
 import { formatAssistantTimestamp } from './assistantTimestamp'
 import { ComposerDictation } from './ComposerDictation'
 import { coalesceRefresh } from './localDataRefresh'
@@ -111,16 +113,7 @@ const AssistantChat = memo(function AssistantChat({
   const taskActionLock = useRef(false)
   const [conversation, replaceConversation] = useState<AssistantConversation | null>(null)
   const setConversation = useCallback((value: AssistantConversation) => {
-    replaceConversation((previous) => {
-      if (!previous || !value.messages.length) return value
-      const overlap = previous.messages.findIndex((message) => message.id === value.messages[0]?.id)
-      if (overlap <= 0) return value
-      return {
-        ...value,
-        hasEarlier: previous.hasEarlier,
-        messages: [...previous.messages.slice(0, overlap), ...value.messages],
-      }
-    })
+    replaceConversation((previous) => reconcileAssistantConversation(previous, value))
   }, [])
   const [loadingEarlier, setLoadingEarlier] = useState(false)
   const [earlierError, setEarlierError] = useState(false)
@@ -453,7 +446,7 @@ const AssistantChat = memo(function AssistantChat({
       timer = setTimeout(() => {
         timer = null
         void refresh()
-      }, 16)
+      }, 80)
     })
     void refresh()
     return () => {
@@ -1500,9 +1493,12 @@ const AssistantAnswer = memo(function AssistantAnswer({
   text,
   results,
   initiative,
-}: Pick<AssistantMessage, 'text' | 'results' | 'initiative'>) {
+  status,
+}: Pick<AssistantMessage, 'text' | 'results' | 'initiative' | 'status'>) {
+  const [animateWords] = useState(status === 'streaming')
   return (
     <MarkdownContent
+      rehypePlugins={[[rehypeStreamingWords, { enabled: animateWords }]]}
       components={{ pre: AssistantCodeBlock, a: AssistantMarkdownLink }}
       remarkPlugins={[
         [
@@ -1639,7 +1635,12 @@ function AssistantMessageView({
         />
       ) : null}
       {message.text ? (
-        <AssistantAnswer text={message.text} results={message.results} initiative={message.initiative} />
+        <AssistantAnswer
+          text={message.text}
+          results={message.results}
+          initiative={message.initiative}
+          status={message.status}
+        />
       ) : null}
       {message.initiative?.taskIds?.length ? (
         <div className="mt-3 flex flex-wrap">
