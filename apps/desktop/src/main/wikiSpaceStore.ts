@@ -35,6 +35,7 @@ import {
   personalWikiDirectory,
   prepareManagedKnowledgeUpdatesAt,
   proposedKnowledgePageSlugAt,
+  readKnowledgePagesAt,
   restoreKnowledgePageRevisionAt,
   saveKnowledgePageAt,
   writeKnowledgeIndex,
@@ -488,7 +489,11 @@ export async function listWikiPages(spaceId: string) {
 }
 
 export async function readWikiContextSnapshot(spaceId: string) {
-  return { pages: listKnowledgePagesAt(localSpaceDirectory(spaceId)), checkedAt: Date.now(), state: 'fresh' as const }
+  return {
+    pages: await readKnowledgePagesAt(localSpaceDirectory(spaceId)),
+    checkedAt: Date.now(),
+    state: 'fresh' as const,
+  }
 }
 
 export async function createWikiPage(input: CreateWikiPageInput) {

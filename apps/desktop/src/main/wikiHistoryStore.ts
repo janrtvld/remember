@@ -311,12 +311,18 @@ function presentRevision(row: DatabaseRow): WikiPageRevision {
   }
 }
 
-export function getWikiPageHistory(spaceId: string, slug: string): WikiPageHistory | null {
+export function getWikiPageHead(spaceId: string, slug: string) {
   const page = requiredDatabase()
     .prepare('SELECT id, head_revision_id FROM wiki_page WHERE space_id = ? AND slug = ?')
     .get(spaceId, slug) as DatabaseRow | undefined
   if (!page) return null
-  const pageId = text(page.id)
+  return { pageId: text(page.id), headRevisionId: nullableText(page.head_revision_id) }
+}
+
+export function getWikiPageHistory(spaceId: string, slug: string): WikiPageHistory | null {
+  const page = getWikiPageHead(spaceId, slug)
+  if (!page) return null
+  const { pageId, headRevisionId } = page
   const revisions = requiredDatabase()
     .prepare(`
       SELECT id, parent_revision_id, created_at, actor, operation, source_id, summary, title, content, content_hash, evidence_json
@@ -329,7 +335,7 @@ export function getWikiPageHistory(spaceId: string, slug: string): WikiPageHisto
     pageId,
     spaceId,
     slug,
-    headRevisionId: nullableText(page.head_revision_id),
+    headRevisionId,
     revisions: revisions.map(presentRevision),
   }
 }

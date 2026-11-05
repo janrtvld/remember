@@ -11,6 +11,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
+import { setImmediate } from 'node:timers/promises'
 import type {
   CreateWikiPageInput,
   DailyReviewWikiPage,
@@ -29,6 +30,7 @@ import {
   abortWikiPageRevision,
   beginWikiPageRevision,
   commitWikiPageRevision,
+  getWikiPageHead,
   getWikiPageHistory,
   getWikiPageRevision,
   initializeWikiHistoryStore,
@@ -171,7 +173,7 @@ function recordCurrentPage(directory: string, slug: string, content: string) {
   const title = pageTitle(content, slug.split('/').at(-1) ?? slug)
   const body = pageBody(content)
   if (reconcilePendingWikiPageRevision(spaceId, slug, title, body)) return
-  const history = getWikiPageHistory(spaceId, slug)
+  const history = getWikiPageHead(spaceId, slug)
   recordWikiPageRevision({
     spaceId,
     slug,
@@ -236,37 +238,58 @@ function deletePageWithHistory(directory: string, slug: string, mutation: WikiMu
   }
 }
 
-export function listKnowledgePagesAt(directory: string): DailyReviewWikiPage[] {
-  if (!existsSync(directory)) return []
+function readKnowledgePageAt(directory: string, path: string): DailyReviewWikiPage | null {
+  try {
+    const slug = pageSlug(directory, path)
+    const content = readFileSync(path, 'utf8')
+    recordCurrentPage(directory, slug, content)
+    const history = getWikiPageHead(historySpaceId(directory), slug)
+    return {
+      slug,
+      title: pageTitle(content, slug.split('/').at(-1) ?? slug),
+      content: pageBody(content),
+      excerpt: pageExcerpt(content),
+      updatedAt: statSync(path).mtimeMs,
+      sourceCount: rememberSourceIds(content).length,
+      revision: history?.headRevisionId ?? undefined,
+    }
+  } catch (error) {
+    console.warn(`[daily-review] Could not read wiki page ${path}`, error)
+    return null
+  }
+}
 
-  return markdownFiles(directory)
-    .flatMap((path) => {
-      try {
-        const slug = pageSlug(directory, path)
-        const content = readFileSync(path, 'utf8')
-        recordCurrentPage(directory, slug, content)
-        const history = getWikiPageHistory(historySpaceId(directory), slug)
-        return [
-          {
-            slug,
-            title: pageTitle(content, slug.split('/').at(-1) ?? slug),
-            content: pageBody(content),
-            excerpt: pageExcerpt(content),
-            updatedAt: statSync(path).mtimeMs,
-            sourceCount: rememberSourceIds(content).length,
-            revision: history?.headRevisionId ?? undefined,
-          },
-        ]
-      } catch (error) {
-        console.warn(`[daily-review] Could not read wiki page ${path}`, error)
-        return []
-      }
+function sortKnowledgePages(pages: DailyReviewWikiPage[]) {
+  return pages.sort((first, second) => {
+    const firstSpecial = first.slug === 'index' ? 0 : first.slug === 'log' ? 1 : 2
+    const secondSpecial = second.slug === 'index' ? 0 : second.slug === 'log' ? 1 : 2
+    return firstSpecial - secondSpecial || first.slug.localeCompare(second.slug)
+  })
+}
+
+export function listKnowledgePagesAt(directory: string): DailyReviewWikiPage[] {
+  return sortKnowledgePages(
+    markdownFiles(directory).flatMap((path) => {
+      const page = readKnowledgePageAt(directory, path)
+      return page ? [page] : []
     })
-    .sort((first, second) => {
-      const firstSpecial = first.slug === 'index' ? 0 : first.slug === 'log' ? 1 : 2
-      const secondSpecial = second.slug === 'index' ? 0 : second.slug === 'log' ? 1 : 2
-      return firstSpecial - secondSpecial || first.slug.localeCompare(second.slug)
-    })
+  )
+}
+
+export async function readKnowledgePagesAt(directory: string): Promise<DailyReviewWikiPage[]> {
+  const pages: DailyReviewWikiPage[] = []
+  // Yield before disk work and between batches so Electron can handle input and cancellation.
+  await setImmediate()
+  let batchStarted = performance.now()
+  for (const path of markdownFiles(directory)) {
+    const page = readKnowledgePageAt(directory, path)
+    if (page) pages.push(page)
+    if (performance.now() - batchStarted >= 8) {
+      await setImmediate()
+      batchStarted = performance.now()
+    }
+  }
+  return sortKnowledgePages(pages)
 }
 
 export function listKnowledgePages(): DailyReviewWikiPage[] {

@@ -17,6 +17,7 @@ import {
   listPersonalWikiChanges,
   moveKnowledgePageTreeAt,
   prepareManagedKnowledgeUpdatesAt,
+  readKnowledgePagesAt,
   removeKnowledgeForSession,
   restoreKnowledgePageRevisionAt,
   saveKnowledgePageAt,
@@ -37,6 +38,27 @@ function wikiDirectory() {
 }
 
 describe('knowledge store spaces', () => {
+  it('reads context without blocking the next event-loop turn and retains external edits and revisions', async () => {
+    initializeKnowledgeStore(wikiDirectory())
+    const directory = wikiDirectory()
+    upsertKnowledgePageAt(directory, { slug: 'client', title: 'Client', content: 'Original agreement.' })
+    const original = getKnowledgePageHistoryAt(directory, 'client')
+    let yielded = false
+    setImmediate(() => {
+      yielded = true
+      writeFileSync(join(directory, 'client.md'), '# Client\n\nUpdated agreement.\n')
+    })
+    const pages = await readKnowledgePagesAt(directory)
+    assert.equal(yielded, true)
+    assert.deepEqual(pages, listKnowledgePagesAt(directory))
+    assert.equal(pages[0].content, 'Updated agreement.')
+    assert.notEqual(pages[0].revision, original.headRevisionId)
+    const history = getKnowledgePageHistoryAt(directory, 'client')
+    assert.equal(history.revisions.length, original.revisions.length + 1)
+    assert.equal(history.headRevisionId, pages[0].revision)
+    assert.equal(history.revisions[0].actor, 'external')
+  })
+
   it('rejects a write-time alias retarget without changing the newly existing page or its history', () => {
     initializeKnowledgeStore(wikiDirectory())
     const directory = wikiDirectory()
