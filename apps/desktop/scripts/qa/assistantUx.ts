@@ -3,6 +3,87 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from 'playwright-core'
 
+export async function measureAssistantTyping(page: Page, directory: string) {
+  const composer = page.locator('#assistant-message')
+  await page.evaluate(() => window.remember.updateSettings({ offlineMode: false, cloudAnalysisConsent: true }))
+  await composer.fill('qa-ux-typing-history: review the synthetic client workstreams.')
+  await composer.press('Enter')
+  await page.waitForFunction(async () => {
+    const conversation = await window.remember.getAssistantConversation()
+    return !conversation.activeTurnId && conversation.messages.at(-1)?.text.includes('## Workstream 60')
+  })
+  await page
+    .locator('[data-assistant-message]')
+    .last()
+    .getByRole('heading', { name: 'Workstream 60', exact: true })
+    .waitFor()
+  await composer.fill('')
+  await page.evaluate(() => {
+    const samples: number[] = []
+    const longTasks: number[] = []
+    const focused: boolean[] = []
+    const observer = new PerformanceObserver((list) => {
+      longTasks.push(...list.getEntries().map((entry) => entry.duration))
+    })
+    observer.observe({ type: 'longtask' })
+    const events = {
+      input() {
+        focused.push(document.hasFocus() && document.visibilityState === 'visible')
+        const started = performance.now()
+        requestAnimationFrame(() => samples.push(performance.now() - started))
+      },
+    }
+    const composer = document.querySelector('#assistant-message')
+    if (!composer) throw new Error('Missing Agent composer')
+    composer.addEventListener('input', events.input)
+    Object.assign(window, {
+      qaAssistantTyping: {
+        samples,
+        longTasks,
+        focused,
+        finish() {
+          composer.removeEventListener('input', events.input)
+          observer.disconnect()
+        },
+      },
+    })
+  })
+  const text =
+    'Please compare the client decisions, list the remaining questions, and suggest a short agenda for our next conversation.'
+  await composer.pressSequentially(text, { delay: 12 })
+  assert.equal(await composer.inputValue(), text, 'Typing must preserve every character')
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())))
+  const proof = await page.evaluate(() => {
+    const result = Reflect.get(window, 'qaAssistantTyping')
+    result.finish()
+    const samples: number[] = [...result.samples].sort((a, b) => a - b)
+    return {
+      boundary:
+        'Input event to next animation frame in the fixture Electron renderer with retained chat history; not physical key-to-paint latency.',
+      characters: samples.length,
+      medianMs: samples[Math.floor(samples.length / 2)],
+      p95Ms: samples[Math.ceil(samples.length * 0.95) - 1],
+      maxMs: samples.at(-1),
+      longTasks: result.longTasks,
+      focused: result.focused.every(Boolean),
+    }
+  })
+  writeFileSync(join(directory, 'assistant-typing-performance.json'), JSON.stringify(proof, null, 2))
+  for (const colorScheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme })
+    await page.screenshot({ path: join(directory, `assistant-chat-${colorScheme}.png`) })
+  }
+  await page.emulateMedia({ colorScheme: null })
+  assert.equal(proof.characters, text.length)
+  assert(proof.focused, 'Typing measurements require a focused and visible native window')
+  assert(proof.p95Ms <= 100, `Composer typing p95 ${proof.p95Ms}ms exceeds 100ms`)
+  await page.reload()
+  await composer.waitFor({ state: 'visible' })
+  assert.equal(await composer.inputValue(), text, 'Typing-only draft must survive renderer reload')
+  await composer.fill('')
+  await page.evaluate(() => window.remember.updateSettings({ offlineMode: true }))
+}
+
 /** Renderer observations in the QA runner's owned Electron window, never a production attachment. */
 export async function observeAssistantSubmit(page: Page, text: string, durationMs = 1_500) {
   await page.evaluate(
@@ -220,6 +301,21 @@ export async function measureAssistantProgress(page: Page, directory: string) {
     }
   })
   await page.screenshot({ path: join(directory, 'assistant-thinking.png') })
+  proof.themes = {}
+  for (const colorScheme of ['dark', 'light'] as const) {
+    await page.emulateMedia({ colorScheme })
+    const summary = progress.locator('[data-assistant-progress-summary]')
+    Reflect.set(
+      proof.themes as object,
+      colorScheme,
+      await summary.evaluate((element) => ({
+        background: getComputedStyle(element).backgroundImage,
+        animation: getComputedStyle(element).animationName,
+      }))
+    )
+    await page.screenshot({ path: join(directory, `assistant-thinking-${colorScheme}.png`) })
+  }
+  await page.emulateMedia({ colorScheme: null })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   try {
     proof.reducedMotion = await progress.evaluate((element) => ({

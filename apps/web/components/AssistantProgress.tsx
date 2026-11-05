@@ -82,7 +82,7 @@ export function AssistantProgress({
         <div className="flex h-8 w-fit max-w-full min-w-0 items-center gap-2">{content}</div>
       )}
       {expanded && details.length ? (
-        <ol id={panelId} className="mt-1 mb-2 space-y-2 border-slate-200 border-l pl-4 text-sm leading-5">
+        <ol id={panelId} className="mt-1 mb-2 space-y-2 border-slate-200 border-l-[0.5px] pl-4 text-sm leading-5">
           {details.map((step) => (
             <li key={step.id} className="whitespace-pre-wrap wrap-anywhere">
               {step.kind === 'reasoning' ? step.text : t(step.text)}

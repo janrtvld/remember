@@ -30,6 +30,12 @@ readline.createInterface({input:process.stdin}).on('line', line => {
  if(request.method==='turn/start') {
   message=request.params.input[0].text.split('=== Current user request ===\\n').at(-1);turn=message.includes('qa-cancel-no-approval')?'cancel-no-approval':message.includes('qa-cancel')?'cancel':'complete';reply({turn:{id:turn}});
   event('turn/started',{turn:{id:turn}});
+  if(message.includes('qa-ux-typing-history')) {
+   const text=Array.from({length:60},(_,index)=>'## Workstream '+(index+1)+'\\n\\nThe synthetic client agreed to review the release plan before confirming the launch date. **Owner:** project lead.\\n\\n- Confirm the remaining questions.\\n- Review the acceptance criteria.\\n\\n| Decision | Status |\\n| --- | --- |\\n| Release review | Pending |\\n| Follow-up agenda | Prepared |').join('\\n\\n---\\n\\n');
+   event('item/completed',{item:{id:'typing-history',type:'agentMessage',phase:'final_answer',text}});
+   event('turn/completed',{turn:{id:turn,status:'completed'}});
+   return;
+  }
   if(message.includes('qa-ux-short-')) {
    setTimeout(()=>{
     event('item/completed',{item:{id:'ux-answer',type:'agentMessage',phase:'final_answer',text:'Ontvangen.'}});

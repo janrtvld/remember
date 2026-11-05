@@ -9,6 +9,7 @@ import { agentConsentUiQa } from './agentConsent'
 import {
   measureAssistantProgress,
   measureAssistantReading,
+  measureAssistantTyping,
   measureAssistantWidths,
   measureRepeatedAssistantSubmit,
   observeAssistantSubmit,
@@ -421,6 +422,7 @@ export async function residentAgentAfterRestartQa(page: Page, webUrl: string, di
   )
   await agentConsentUiQa(page, webUrl, directory)
   await measureRepeatedAssistantSubmit(page, webUrl, directory)
+  await measureAssistantTyping(page, directory)
   await verifyAssistantHistoryScroll(page, directory)
   await verifyAssistantDraftScopes(page, directory)
 }

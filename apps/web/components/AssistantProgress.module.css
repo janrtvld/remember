@@ -3,15 +3,13 @@
   background-image: linear-gradient(
     100deg,
     oklch(var(--neutral-500)) 35%,
-    oklch(var(--neutral-400)) 45%,
-    oklch(var(--blue-500)) 50%,
-    oklch(var(--neutral-400)) 55%,
+    oklch(var(--neutral-600)) 50%,
     oklch(var(--neutral-500)) 65%
   );
   background-size: 250% 100%;
   background-clip: text;
   -webkit-background-clip: text;
-  animation: thinking 2s linear infinite;
+  animation: thinking 2.6s linear infinite;
 }
 
 @keyframes thinking {

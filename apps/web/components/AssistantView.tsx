@@ -10,6 +10,8 @@ import type {
   AssistantMessage,
   AssistantTaskAction,
   AssistantTaskDraft,
+  LocalSettings,
+  RememberBridge,
 } from '@remember/shared'
 import {
   ArrowDown as IconArrowDown,
@@ -21,7 +23,7 @@ import {
 import { motion, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AgentWorkerControls } from './AgentWorkerControls'
 import { AssistantBriefingGrant, AssistantBriefingStatus } from './AssistantBriefing'
 import { AssistantCodeBlock } from './AssistantCodeBlock'
@@ -66,6 +68,19 @@ function assistantSession(
 }
 
 export function AssistantView({ active = true }: { active?: boolean }) {
+  const local = useLocalBridge()
+  return <AssistantChat active={active} bridge={local.bridge} settings={local.settings} />
+}
+
+const AssistantChat = memo(function AssistantChat({
+  active,
+  bridge,
+  settings,
+}: {
+  active: boolean
+  bridge: RememberBridge | null
+  settings: LocalSettings | null
+}) {
   const [now, setNow] = useState(Date.now)
   useEffect(() => {
     const refreshClock = () => setNow(Date.now())
@@ -78,8 +93,6 @@ export function AssistantView({ active = true }: { active?: boolean }) {
     }
   }, [])
   const reducedMotion = useReducedMotion()
-  const local = useLocalBridge()
-  const bridge = local.bridge
   const { t } = useI18n()
   const search = useSearchParams()
   const router = useRouter()
@@ -139,7 +152,7 @@ export function AssistantView({ active = true }: { active?: boolean }) {
   const [mode, setMode] = useState<'question' | 'command'>('question')
   const [commandError, setCommandError] = useState<{ messageId: string; message: string } | null>(null)
   draftValue.current = draft
-  const provider = local.settings?.defaultAgentProvider ?? 'codex'
+  const provider = settings?.defaultAgentProvider ?? 'codex'
   const [requests, setRequests] = useState<AgentInteraction[]>([])
   const [interactionError, setInteractionError] = useState('')
   const interactionReader = useRef<(() => Promise<AgentInteraction[]>) | null>(null)
@@ -231,8 +244,8 @@ export function AssistantView({ active = true }: { active?: boolean }) {
     Boolean(unfinishedCommand) ||
     (!sharedTaskChat && Boolean(activeTaskAction))
   const queueing = Boolean(commandMode?.unified && unfinishedCommand && !taskDraft && !taskId)
-  const canUseAgent = Boolean(conversation) && !local.settings?.offlineMode
-  const canSend = canUseAgent && local.settings?.cloudAnalysisConsent === true
+  const canUseAgent = Boolean(conversation) && !settings?.offlineMode
+  const canSend = canUseAgent && settings?.cloudAnalysisConsent === true
   const recoveryRequired = Boolean(conversation?.remoteRecoveryRequired)
   const showStop = Boolean(
     (commandMode?.unified && unfinishedCommand) ||
@@ -247,13 +260,13 @@ export function AssistantView({ active = true }: { active?: boolean }) {
       hostConnection !== 'connecting' &&
       (hostResultNeedsCheck || hostConnection === 'disconnected' || hostPhase === 'recovery-required')
   )
-  const hostReviewReady = hostConnection === 'connected' && hostPhase === 'waiting' && !local.settings?.offlineMode
+  const hostReviewReady = hostConnection === 'connected' && hostPhase === 'waiting' && !settings?.offlineMode
   const hasTaskAction = Boolean(activeTaskAction)
   const taskReviewReady =
     activeTaskAction?.connection === 'connected' &&
     activeTaskAction.state === 'waiting' &&
-    !local.settings?.offlineMode &&
-    local.settings?.cloudAnalysisConsent === true
+    !settings?.offlineMode &&
+    settings?.cloudAnalysisConsent === true
   const visibleRequests = activeTaskAction
     ? taskReviewReady
       ? requests.filter((request) => request.turnId === activeTaskAction.messageId)
@@ -563,7 +576,8 @@ export function AssistantView({ active = true }: { active?: boolean }) {
     }
   }, [])
 
-  useLayoutEffect(followConversation)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Message commits require scroll alignment; keystrokes do not.
+  useLayoutEffect(followConversation, [conversation, localMessages, followConversation])
 
   useEffect(() => {
     const viewport = scroll.current
@@ -1147,7 +1161,7 @@ export function AssistantView({ active = true }: { active?: boolean }) {
                 ) : null}
               </div>
             ) : null}
-            {local.settings?.offlineMode ? (
+            {settings?.offlineMode ? (
               <p role="status" className="mb-3 text-slate-500 text-sm">
                 {t('Je bent offline. Je gesprek blijft bewaard.')}
               </p>
@@ -1480,7 +1494,33 @@ export function AssistantView({ active = true }: { active?: boolean }) {
       </div>
     </div>
   )
-}
+})
+
+const AssistantAnswer = memo(function AssistantAnswer({
+  text,
+  results,
+  initiative,
+}: Pick<AssistantMessage, 'text' | 'results' | 'initiative'>) {
+  return (
+    <MarkdownContent
+      components={{ pre: AssistantCodeBlock, a: AssistantMarkdownLink }}
+      remarkPlugins={[
+        [
+          remarkAssistantReferences,
+          {
+            exclude: [
+              ...(results?.map((result) => wikiPageHref(result.spaceId, result.slug)) ?? []),
+              ...(initiative?.taskIds?.map((id) => `/inbox/?item=${encodeURIComponent(id)}`) ?? []),
+            ],
+          },
+        ],
+      ]}
+      className="break-words [overflow-wrap:anywhere] [&_hr]:border-t-[0.5px] [&_hr]:border-slate-200"
+    >
+      {text}
+    </MarkdownContent>
+  )
+})
 
 function AssistantMessageView({
   message,
@@ -1559,7 +1599,7 @@ function AssistantMessageView({
     >
       {previousMessage?.role === 'assistant' ? (
         <div className="mb-6 flex items-center gap-3 text-slate-400 text-xs" data-assistant-message-divider>
-          <span aria-hidden="true" className="h-px flex-1 bg-slate-200" />
+          <span aria-hidden="true" className="h-[0.5px] flex-1 bg-slate-200" />
           <time
             dateTime={new Date(message.createdAt).toISOString()}
             title={new Date(message.createdAt).toLocaleString(dateLocale)}
@@ -1567,7 +1607,7 @@ function AssistantMessageView({
           >
             {formatAssistantTimestamp(message.createdAt, dateLocale, now)}
           </time>
-          <span aria-hidden="true" className="h-px flex-1 bg-slate-200" />
+          <span aria-hidden="true" className="h-[0.5px] flex-1 bg-slate-200" />
         </div>
       ) : null}
       {message.error === 'assistant-proactive-source-unavailable' ? (
@@ -1599,23 +1639,7 @@ function AssistantMessageView({
         />
       ) : null}
       {message.text ? (
-        <MarkdownContent
-          components={{ pre: AssistantCodeBlock, a: AssistantMarkdownLink }}
-          remarkPlugins={[
-            [
-              remarkAssistantReferences,
-              {
-                exclude: [
-                  ...(message.results?.map((result) => wikiPageHref(result.spaceId, result.slug)) ?? []),
-                  ...(message.initiative?.taskIds?.map((id) => `/inbox/?item=${encodeURIComponent(id)}`) ?? []),
-                ],
-              },
-            ],
-          ]}
-          className="break-words [overflow-wrap:anywhere]"
-        >
-          {message.text}
-        </MarkdownContent>
+        <AssistantAnswer text={message.text} results={message.results} initiative={message.initiative} />
       ) : null}
       {message.initiative?.taskIds?.length ? (
         <div className="mt-3 flex flex-wrap">
