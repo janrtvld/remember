@@ -166,7 +166,7 @@ function normalizeOpenTask(task: OpenTask) {
     title,
     ...(task.titleChangeReason === 'outcome' ? { titleChangeReason: 'outcome' as const } : {}),
     description,
-    ...(prompt ? { prompt } : {}),
+    ...(typeof task.prompt === 'string' ? { prompt } : {}),
     ...(task.aiSuggestion !== undefined
       ? { aiSuggestion: typeof task.aiSuggestion === 'string' ? task.aiSuggestion.trim() || null : null }
       : {}),

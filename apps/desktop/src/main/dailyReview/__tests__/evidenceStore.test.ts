@@ -10,6 +10,7 @@ import { conversationActionPointItems, workItemForConversationActionPoint } from
 import { selectAgentTasks } from '../../residentAgentPrivacy'
 import { mergeRevinoteMeetings } from '../../revinoteMeetings'
 import { DEFAULT_SETTINGS } from '../../settingsStore'
+import { parseDayMemory } from '../analysisFormat'
 import { EvidenceStore } from '../evidenceStore'
 
 const paths: string[] = []
@@ -1761,6 +1762,7 @@ test('applies analyzed work by durable identity without duplicating or overwriti
         title: 'Verify the renderer',
         description: 'Check the narrow layout.',
         prompt: 'Open the renderer at 520 px.',
+        aiSuggestion: 'Want me to check the narrow layout?',
         context: 'Desktop QA passed; narrow-window QA remains.',
         returnPoint: {
           lastMove: 'Desktop QA passed.',
@@ -1803,6 +1805,24 @@ test('applies analyzed work by durable identity without duplicating or overwriti
   assert.equal(store.listWorkItems().length, 1)
 
   const userEdited = store.updateWorkItem(created.id, 'Verify signed renderer', 'Install and inspect the signed app.')
+  assert.equal(userEdited.prompt, '')
+  assert.equal(userEdited.aiSuggestion, null)
+  assert.deepEqual(
+    store.applyAnalyzedWorkItems({
+      workdayId: 'day-analyzed-work',
+      plan: {
+        proposed: [{ ...firstPlan.proposed[0], id: created.id }],
+        changes: [{ id: created.id, title: created.title, type: 'completed', reason: 'The old layout was checked.' }],
+      },
+      conversations: [],
+      analysisStartedAt: userEdited.updatedAt - 1,
+      observedAt: userEdited.updatedAt + 1,
+    }),
+    { created: 0, updated: 0, closed: 0 }
+  )
+  assert.equal(store.getWorkItem(created.id)?.prompt, '')
+  assert.equal(store.getWorkItem(created.id)?.aiSuggestion, null)
+  assert.deepEqual(store.getWorkItem(created.id)?.observations, [])
   const updated = store.applyAnalyzedWorkItems({
     workdayId: 'day-analyzed-work',
     plan: {
@@ -1871,13 +1891,20 @@ test('persists optional AI offers across restart and clears them when analysis i
     plan: { proposed: [{ ...task, id: created.id, aiSuggestion: undefined }], changes: [] },
   })
   assert.equal(store.getWorkItem(created.id)?.aiSuggestion, task.aiSuggestion)
+  const personalWork = parseDayMemory(
+    JSON.stringify({
+      summary: 'Only personal work remains.',
+      openTasks: [{ ...task, id: created.id, aiSuggestion: null, prompt: '' }],
+    })
+  )
   store.applyAnalyzedWorkItems({
     ...input,
     analysisStartedAt: 1_600,
     observedAt: 1_700,
-    plan: { proposed: [{ ...task, id: created.id, aiSuggestion: null }], changes: [] },
+    plan: { proposed: personalWork.openTasks ?? [], changes: [] },
   })
   assert.equal(store.getWorkItem(created.id)?.aiSuggestion, null)
+  assert.equal(store.getWorkItem(created.id)?.prompt, '')
   store.close()
   store = new EvidenceStore(path)
   assert.equal(store.getWorkItem(created.id)?.aiSuggestion, null)
@@ -1886,6 +1913,7 @@ test('persists optional AI offers across restart and clears them when analysis i
 
   // Simulate an older archive: an existing brief does not opt the task into AI.
   const database = new DatabaseSync(path)
+  database.prepare('UPDATE work_item SET prompt = ? WHERE id = ?').run(task.prompt, created.id)
   database.exec('ALTER TABLE work_item DROP COLUMN ai_suggestion')
   database.close()
   store = new EvidenceStore(path)
@@ -2612,7 +2640,30 @@ test('does not treat the same short title on a later day as durable identity', (
 test('records analyzed completion as an observation and preserves explicit user lifecycle choices', () => {
   const store = createStore()
   const item = store.createWorkItem('Publish the release', 'Publish the signed build.')
-  const analysisStartedAt = item.updatedAt
+  const conversations = [{ title: 'Release', startTime: '09:00', endTime: '09:30', description: 'Publish the build.' }]
+  const proposal = {
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    aiSuggestion: 'Want me to publish the signed build?',
+    prompt: 'Publish the signed build.',
+    source: {
+      kind: 'conversation' as const,
+      label: 'Release',
+      detail: 'Publish the build.',
+      conversationStartTime: '09:00',
+    },
+  }
+  store.applyAnalyzedWorkItems({
+    workdayId: 'day-lifecycle-analysis',
+    conversations,
+    plan: { proposed: [proposal], changes: [] },
+    analysisStartedAt: item.updatedAt,
+    observedAt: item.updatedAt + 1,
+  })
+  const prepared = store.getWorkItem(item.id)
+  assert.equal(prepared?.aiSuggestion, 'Want me to publish the signed build?')
+  const analysisStartedAt = prepared?.updatedAt ?? item.updatedAt
   const observedAt = analysisStartedAt + 1
   const change = {
     id: item.id,
@@ -2633,10 +2684,35 @@ test('records analyzed completion as an observation and preserves explicit user 
   )
   assert.equal(store.getWorkItem(item.id)?.lifecycle, 'open')
   assert.equal(store.getWorkItem(item.id)?.observations.at(-1)?.kind, 'completion_candidate')
+  assert.equal(store.getWorkItem(item.id)?.aiSuggestion, null)
+  assert.equal(store.getWorkItem(item.id)?.prompt, '')
+  assert.deepEqual(
+    store.applyAnalyzedWorkItems({
+      workdayId: 'day-lifecycle-analysis',
+      conversations,
+      plan: { proposed: [proposal], changes: [] },
+      analysisStartedAt,
+      observedAt: observedAt + 1,
+    }),
+    { created: 0, updated: 0, closed: 0 }
+  )
+  assert.equal(store.getWorkItem(item.id)?.aiSuggestion, null)
+  store.updateWorkItemMetadata(item.id, { status: 'in_progress', priority: 'high', dueAt: observedAt + 86_400_000 })
+  assert.equal(store.getWorkItem(item.id)?.aiSuggestion, null)
+  store.startWorkItemAgentSession(item.id, {
+    sessionId: 'completion-check',
+    provider: 'codex',
+    prompt: 'Review the reported completion.',
+    message: '',
+    startedAt: Date.now(),
+  })
+  assert.equal(store.getWorkItem(item.id)?.aiSuggestion, null)
+  assert.equal(store.getWorkItem(item.id)?.prompt, '')
   store.setWorkItemLifecycle(item.id, 'completed')
 
   const reopened = store.setWorkItemLifecycle(item.id, 'open')
   assert.ok(reopened.updatedAt > observedAt)
+  assert.equal(reopened.aiSuggestion, 'Want me to publish the signed build?')
   assert.deepEqual(
     store.applyAnalyzedWorkItems({
       workdayId: 'day-lifecycle-analysis',

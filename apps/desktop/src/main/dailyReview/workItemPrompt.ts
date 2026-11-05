@@ -20,10 +20,52 @@ export type PromptWorkItem = Pick<
   | 'userEditedTitle'
   | 'userEditedDescription'
 > &
-  Partial<Pick<WorkItem, 'prompt' | 'aiSuggestion' | 'context' | 'returnPoint'>>
+  Partial<Pick<WorkItem, 'prompt' | 'aiSuggestion' | 'context' | 'returnPoint'>> & {
+    observations?: Pick<WorkItem['observations'][number], 'kind' | 'summary' | 'confidence' | 'observedAt'>[]
+    agentSessions?: Pick<WorkItem['agentSessions'][number], 'status' | 'instruction' | 'updatedAt'>[]
+    userFacts?: Pick<WorkItem['facts'][number], 'type' | 'summary' | 'at'>[]
+  }
 
 function bounded(value: string, limit: number) {
   return value.length <= limit ? value : `${value.slice(0, limit - 1)}…`
+}
+
+function taskState(item: WorkItem, detailLimit: number) {
+  if (item.lifecycle !== 'open') return {}
+  const observations = [
+    ...new Map(
+      item.observations
+        .filter((entry) => entry.dismissedAt === null)
+        .sort((first, second) => first.observedAt - second.observedAt)
+        .map((entry) => [entry.kind, entry])
+    ).values(),
+  ]
+    .sort((first, second) => second.observedAt - first.observedAt)
+    .map(({ kind, summary, confidence, observedAt }) => ({
+      kind,
+      summary: bounded(summary, detailLimit),
+      confidence,
+      observedAt,
+    }))
+  const agentSessions = item.agentSessions
+    .filter((session) => session.status === 'running' || session.status === 'waiting_on_user')
+    .sort((first, second) => second.updatedAt - first.updatedAt)
+    .slice(0, 2)
+    .map(({ status, instruction, updatedAt }) => ({
+      status,
+      instruction: bounded(instruction, detailLimit),
+      updatedAt,
+    }))
+  const userFacts = item.facts
+    .filter((fact) => fact.actor === 'user' && ['created', 'edited', 'reopened'].includes(fact.type))
+    .sort((first, second) => second.at - first.at)
+    .slice(0, 1)
+    .map(({ type, summary, at }) => ({ type, summary: bounded(summary, detailLimit), at }))
+  return {
+    ...(observations.length ? { observations } : {}),
+    ...(agentSessions.length ? { agentSessions } : {}),
+    ...(userFacts.length ? { userFacts } : {}),
+  }
 }
 
 function actionableProjection(item: WorkItem): PromptWorkItem {
@@ -46,6 +88,7 @@ function actionableProjection(item: WorkItem): PromptWorkItem {
     updatedAt: item.updatedAt,
     userEditedTitle: item.userEditedTitle,
     userEditedDescription: item.userEditedDescription,
+    ...taskState(item, 320),
   }
 }
 
@@ -105,7 +148,10 @@ export function workItemsForPrompt(items: WorkItem[]) {
     if (JSON.stringify([...projected, actionable, ...remainingIdentities]).length <= characterBudget) {
       append(actionable)
     } else {
-      append(identity)
+      const compact = { ...identity, ...taskState(item, 160) }
+      append(
+        JSON.stringify([...projected, compact, ...remainingIdentities]).length <= characterBudget ? compact : identity
+      )
     }
   }
   for (const item of terminal) append(identityProjection(item))

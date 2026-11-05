@@ -68,11 +68,46 @@ describe('WorkItem analysis prompt projection', () => {
       ...workItem(`open-${index}`, 'open', 100 - index),
       status: 'in_progress' as const,
       attention: 'agent_running' as const,
+      title: 't'.repeat(240),
       description: 'd'.repeat(80_000),
       prompt: 'p'.repeat(80_000),
       context: 'c'.repeat(80_000),
     }))
     const terminal = Array.from({ length: 24 }, (_, index) => workItem(`closed-${index}`, 'completed', index))
+    for (const item of open) {
+      item.observations = (['progress', 'blocked', 'completion_candidate'] as const).map((kind, index) => ({
+        id: `${item.id}-${kind}`,
+        kind,
+        summary: 'Reported task state. '.repeat(1_000),
+        confidence: 0.8,
+        workdayId: 'day',
+        observedAt: 100 + index,
+        dismissedAt: null,
+      }))
+      item.agentSessions = [1, 2].map((index) => ({
+        id: `${item.id}-session-${index}`,
+        provider: 'codex',
+        status: 'running',
+        instruction: 'A supported active task instruction. '.repeat(1_000),
+        message: '',
+        response: '',
+        startedAt: 90,
+        updatedAt: 99,
+        completedAt: null,
+        durationMs: null,
+        steps: [],
+      }))
+      item.facts = [
+        {
+          id: `${item.id}-edited`,
+          actor: 'user',
+          type: 'edited',
+          summary: 'A human-written constraint. '.repeat(1_000),
+          at: 90,
+          agentSessionId: null,
+        },
+      ]
+    }
 
     const projected = workItemsForPrompt([...terminal, ...open])
     const projectedIds = new Set(projected.map((item) => item.id))
@@ -81,12 +116,99 @@ describe('WorkItem analysis prompt projection', () => {
       open.every((item) => projectedIds.has(item.id)),
       true
     )
-    assert.ok(projected.find((item) => item.id === 'open-0')?.context)
-    const compact = projected.find((item) => item.lifecycle === 'open' && !item.context)
-    assert.ok(compact, 'large queues must exercise the compact identity projection')
-    assert.equal(compact.status, 'in_progress')
-    assert.equal(compact.attention, 'agent_running')
+    const enriched = projected.find((item) => item.lifecycle === 'open' && item.observations)
+    assert.ok(enriched, 'remaining space should retain relevant state without dropping identities')
+    assert.equal(enriched.status, 'in_progress')
+    assert.equal(enriched.attention, 'agent_running')
+    assert.equal(enriched.observations?.[0]?.kind, 'completion_candidate')
+    assert.equal(enriched.observations?.[0]?.confidence, 0.8)
+    assert.ok((enriched.observations?.[0]?.summary.length ?? 0) <= 320)
+    assert.ok(projected.some((item) => item.lifecycle === 'open' && !item.context && !item.observations))
     assert.ok(JSON.stringify(projected).length <= WORK_ITEM_PROMPT_CHARACTER_BUDGET)
+  })
+
+  it('carries possible completion, active delegated scope and later human edits without changing lifecycle', () => {
+    const item = workItem('handoff', 'open', 30)
+    item.observations = [
+      {
+        id: 'completion',
+        kind: 'completion_candidate',
+        summary: 'The agent reported the requested handoff draft was opened.',
+        confidence: 0.7,
+        workdayId: 'day',
+        observedAt: 10,
+        dismissedAt: null,
+      },
+      {
+        id: 'old-progress',
+        kind: 'progress',
+        summary: 'An earlier draft was discussed.',
+        confidence: 0.9,
+        workdayId: 'day',
+        observedAt: 5,
+        dismissedAt: null,
+      },
+      {
+        id: 'progress',
+        kind: 'progress',
+        summary: 'The draft received a requested revision.',
+        confidence: 1,
+        workdayId: 'day',
+        observedAt: 25,
+        dismissedAt: null,
+      },
+      {
+        id: 'dismissed',
+        kind: 'blocked',
+        summary: 'An obsolete blocker.',
+        confidence: 1,
+        workdayId: 'day',
+        observedAt: 26,
+        dismissedAt: 27,
+      },
+    ]
+    const running: WorkItem['agentSessions'][number] = {
+      id: 'running',
+      provider: 'codex',
+      status: 'running',
+      instruction: 'Apply the requested revision to the handoff draft.',
+      message: '',
+      response: '',
+      startedAt: 21,
+      updatedAt: 28,
+      completedAt: null,
+      durationMs: null,
+      steps: [],
+    }
+    item.agentSessions = [running, { ...running, id: 'finished', status: 'completed', completedAt: 29 }]
+    item.facts = [
+      { id: 'created', actor: 'user', type: 'created', summary: 'Created handoff task.', at: 1, agentSessionId: null },
+      {
+        id: 'reopened',
+        actor: 'user',
+        type: 'reopened',
+        summary: 'Requested another revision.',
+        at: 20,
+        agentSessionId: null,
+      },
+    ]
+
+    const [projected] = workItemsForPrompt([item])
+
+    assert.equal(projected?.lifecycle, 'open')
+    assert.deepEqual(projected?.observations, [
+      { kind: 'progress', summary: 'The draft received a requested revision.', confidence: 1, observedAt: 25 },
+      {
+        kind: 'completion_candidate',
+        summary: 'The agent reported the requested handoff draft was opened.',
+        confidence: 0.7,
+        observedAt: 10,
+      },
+    ])
+    assert.deepEqual(projected?.agentSessions, [{ status: 'running', instruction: running.instruction, updatedAt: 28 }])
+    assert.deepEqual(projected?.userFacts, [{ type: 'reopened', summary: 'Requested another revision.', at: 20 }])
+    assert.equal(item.observations.length, 4)
+    assert.equal(item.agentSessions.length, 2)
   })
 })
 

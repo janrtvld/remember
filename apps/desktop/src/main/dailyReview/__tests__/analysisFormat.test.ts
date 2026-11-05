@@ -112,7 +112,7 @@ describe('parseDayMemory', () => {
             aiSuggestion: ' Want me to make a PDF with the answers? ',
           },
           { title: 'Legacy task', description: 'Not classified yet.', prompt: 'Old AI brief' },
-          { title: 'Empty offer', description: 'No AI work.', aiSuggestion: '  ' },
+          { title: 'Empty offer', description: 'No AI work.', aiSuggestion: '  ', prompt: '  ' },
         ].map((task) => ({
           ...task,
           source: { kind: 'task', label: 'Commitment', detail: 'Still outstanding.', evidenceId: 'screen-evidence' },
@@ -122,6 +122,10 @@ describe('parseDayMemory', () => {
     assert.deepEqual(
       memory.openTasks?.map((task) => task.aiSuggestion),
       [null, 'Want me to make a PDF with the answers?', undefined, null]
+    )
+    assert.deepEqual(
+      memory.openTasks?.map((task) => task.prompt),
+      ['Old brief', undefined, 'Old AI brief', '']
     )
   })
 

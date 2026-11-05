@@ -1090,6 +1090,8 @@ export class EvidenceStore {
         .get(source.reference, source.actionId) as DatabaseRow | undefined
       return row ? stringValue(row.work_item_id) : null
     }
+    const hasNewerUserEdit = (item: WorkItem) =>
+      item.facts.some((fact) => fact.actor === 'user' && fact.type === 'edited' && fact.at > input.analysisStartedAt)
     transaction(this.database, () => {
       for (const task of input.plan.proposed) {
         const title = task.title.trim()
@@ -1176,6 +1178,16 @@ export class EvidenceStore {
 
         const existing = items.get(task.id)
         if (existing?.lifecycle !== 'open') continue
+        if (hasNewerUserEdit(existing)) continue
+        if (
+          existing.observations.some(
+            (observation) =>
+              observation.kind === 'completion_candidate' &&
+              observation.dismissedAt === null &&
+              observation.observedAt > input.analysisStartedAt
+          )
+        )
+          continue
         const syncRow = this.database.prepare('SELECT day_synced_at FROM work_item WHERE id = ?').get(existing.id) as
           | DatabaseRow
           | undefined
@@ -1183,7 +1195,7 @@ export class EvidenceStore {
 
         const nextTitle = !existing.userEditedTitle && task.titleChangeReason === 'outcome' ? title : existing.title
         const nextDescription = existing.userEditedDescription ? existing.description : description
-        const nextPrompt = task.prompt?.trim() || existing.prompt
+        const nextPrompt = task.prompt === undefined ? existing.prompt : task.prompt.trim()
         const nextAiSuggestion =
           task.aiSuggestion === undefined ? (existing.aiSuggestion ?? null) : task.aiSuggestion?.trim() || null
         const nextContext = task.context?.trim() || existing.context
@@ -1245,6 +1257,7 @@ export class EvidenceStore {
       for (const change of input.plan.changes) {
         const existing = items.get(change.id)
         if (existing?.lifecycle !== 'open') continue
+        if (hasNewerUserEdit(existing)) continue
         const syncRow = this.database
           .prepare('SELECT lifecycle_updated_at FROM work_item WHERE id = ?')
           .get(existing.id) as DatabaseRow | undefined
@@ -1507,7 +1520,7 @@ export class EvidenceStore {
       this.database
         .prepare(
           `UPDATE work_item
-           SET title = ?, description = ?,
+           SET title = ?, description = ?, prompt = '', ai_suggestion = NULL,
                return_unresolved = CASE WHEN ? = 1 THEN ? ELSE return_unresolved END,
                updated_at = MAX(updated_at + 1, ?),
                user_edited_title = CASE WHEN ? = 1 THEN 1 ELSE user_edited_title END,
@@ -3230,13 +3243,19 @@ export class EvidenceStore {
       durationMs: nullableNumber(session.duration_ms),
       steps: JSON.parse(stringValue(session.steps_json)) as WorkItemAgentSession['steps'],
     }))
+    const completionUnresolved = observations.some(
+      (observation) =>
+        observation.kind === 'completion_candidate' &&
+        observation.dismissedAt === null &&
+        observation.observedAt >= Math.max(numberValue(row.day_synced_at), numberValue(row.lifecycle_updated_at))
+    )
 
     return {
       id,
       title: stringValue(row.title),
       description: stringValue(row.description),
-      prompt: stringValue(row.prompt),
-      aiSuggestion: stringValue(row.ai_suggestion) || null,
+      prompt: completionUnresolved ? '' : stringValue(row.prompt),
+      aiSuggestion: completionUnresolved ? null : stringValue(row.ai_suggestion) || null,
       context: stringValue(row.context),
       returnPoint: {
         lastMove: stringValue(row.return_last_move),
