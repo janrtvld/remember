@@ -15,8 +15,8 @@ test('progress never exposes command arguments or connector identifiers from sta
     progressStepText(step('Uitvoeren: curl -H "Authorization: secret" https://example.com')),
     'Opdracht uitvoeren…'
   )
-  assert.equal(progressStepText(step('private-server: customer_data_tool')), 'Bezig…')
-  assert.equal(progressStepText(step('unknown status containing /private/customer/path')), 'Bezig…')
+  assert.equal(progressStepText(step('private-server: customer_data_tool')), 'Opdracht uitvoeren…')
+  assert.equal(progressStepText(step('unknown status containing /private/customer/path')), 'Opdracht uitvoeren…')
 })
 
 test('progress preserves provided reasoning summaries without inventing work', () => {
@@ -59,5 +59,14 @@ test('retained progress redacts command details and keeps provider-supplied summ
       step('De bronnen vergelijken.', 'reasoning'),
     ]).map((value) => value.text),
     ['Opdracht uitvoeren…', 'Zoeken op het web…', 'De bronnen vergelijken.']
+  )
+})
+
+test('generic provider status and command execution keep one continuous progress label', () => {
+  assert.deepEqual(
+    visibleProgressSteps([step('provider-specific startup'), step('Uitvoeren: private command')]).map(
+      (value) => value.text
+    ),
+    ['Opdracht uitvoeren…']
   )
 })

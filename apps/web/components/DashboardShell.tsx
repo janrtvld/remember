@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic'
 import { usePathname, useRouter } from 'next/navigation'
 import { Activity, type ReactNode, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { DayIntroduction } from './DayIntroduction'
 import { ManualMeetingFloatingControl } from './MeetingRecordingControls'
 import { NavigationControls } from './NavigationControls'
 import { SetupState } from './SetupState'
@@ -39,6 +40,20 @@ function DashboardFrame({ children }: { children: ReactNode }) {
     if (assistantActive) setAssistantVisited(true)
   }, [assistantActive])
   const router = useRouter()
+  const [introductionPending, setIntroductionPending] = useState(false)
+  useEffect(() => {
+    if (local.settings && !hasCompletedSetupChoices(local.settings)) setIntroductionPending(true)
+  }, [local.settings])
+  const introductionReady = Boolean(
+    introductionPending &&
+      local.settings &&
+      local.state &&
+      isSetupComplete({ settings: local.settings, state: local.state })
+  )
+  const onDay = pathname === '/day' || pathname === '/day/'
+  useEffect(() => {
+    if (introductionReady && !onDay) router.replace('/day/')
+  }, [introductionReady, onDay, router])
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [setupOnlineError, setSetupOnlineError] = useState(false)
   const setupOnlineRequest = useRef(false)
@@ -143,6 +158,11 @@ function DashboardFrame({ children }: { children: ReactNode }) {
       <Sidebar open={isSidebarOpen} onOpen={openSidebar} />
       <NavigationControls isSidebarOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} />
       <ManualMeetingFloatingControl />
+      <DayIntroduction
+        open={introductionReady && onDay}
+        provider={local.settings.dayAnalysisProvider ?? local.settings.defaultAgentProvider}
+        onClose={() => setIntroductionPending(false)}
+      />
 
       <div
         className={twMerge(

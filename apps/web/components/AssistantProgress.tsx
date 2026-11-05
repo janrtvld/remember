@@ -38,7 +38,7 @@ export function AssistantProgress({
         ? t('Werkstappen')
         : hasResponse
           ? t('Antwoord schrijven…')
-          : t('Even nadenken…')
+          : t('Opdracht uitvoeren…')
 
   if (!active && !details.length && !label) return null
 

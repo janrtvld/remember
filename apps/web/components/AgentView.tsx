@@ -383,9 +383,9 @@ function AgentTraceModal({
 }
 
 function modelLabel(model: string) {
-  if (model === 'gpt-5.6-terra') return 'GPT-5.6 Terra'
-  if (model === 'gpt-5.6-luna') return 'GPT-5.6 Luna'
-  if (model === 'gpt-5.5') return 'GPT-5.5'
+  if (/^gpt-/i.test(model)) {
+    return model.replace(/^gpt-/i, 'GPT-').replace(/-([a-z])/g, (_, letter: string) => ` ${letter.toUpperCase()}`)
+  }
   return model.charAt(0).toUpperCase() + model.slice(1)
 }
 
@@ -470,24 +470,10 @@ function LiveTaskUpdatesSetting() {
   const { t } = useI18n()
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState(false)
-  const [daySyncHelp, setDaySyncHelp] = useState(false)
   const settings = local.settings
 
-  useEffect(() => {
-    let active = true
-    void local.bridge
-      ?.getAssistantConversation()
-      .then((conversation) => {
-        if (active) setDaySyncHelp(Boolean(conversation.proactiveEnabled))
-      })
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [local.bridge])
-
   if (!settings) return null
-  const title = daySyncHelp ? t('Proactief helpen') : t('Taken bijhouden')
+  const title = t('Proactief helpen')
 
   const change = async (enabled: boolean) => {
     if (!local.bridge) return
@@ -513,8 +499,6 @@ function LiveTaskUpdatesSetting() {
           </span>
         ) : settings.offlineMode ? (
           t('Gepauzeerd zolang Offline mode aanstaat.')
-        ) : daySyncHelp ? (
-          t('De agent denkt met je mee en laat van zich horen als hij iets voor je kan doen.')
         ) : (
           t('Werk je taken bij tijdens het werk en meld het als iets aandacht nodig heeft.')
         )
@@ -989,11 +973,7 @@ function AnalysisAgentSettings() {
           ariaLabel={t('Kies het analysemodel voor {provider}', { provider: providerLabel })}
           value={selectedModel}
           options={analysisModels}
-          formatLabel={(model) =>
-            isCodex
-              ? (codexModels.find((entry) => entry.model === model)?.displayName ?? modelLabel(model))
-              : modelLabel(model)
-          }
+          formatLabel={modelLabel}
           disabled={pendingSetting !== null}
           onChange={(value) =>
             void changeSetting(

@@ -14,7 +14,7 @@ export function progressStepText(step: AgentTurnStep): string {
   if (step.kind === 'reasoning') return step.text.trim()
   // Status events can contain shell commands or connector identifiers.
   if (step.text.startsWith('Uitvoeren:')) return 'Opdracht uitvoeren…'
-  return statusLabels[step.text.trim()] ?? 'Bezig…'
+  return statusLabels[step.text.trim()] ?? 'Opdracht uitvoeren…'
 }
 
 export function progressSummary(text: string): string {

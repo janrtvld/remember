@@ -25,6 +25,17 @@ async function temporarySettingsDirectory() {
 }
 
 describe('settingsStore', () => {
+  it('starts new profiles on GPT-6.1 Sol and Sonnet while preserving existing model choices', async () => {
+    const directory = await temporarySettingsDirectory()
+    const initial = readSettingsAt(directory).settings
+    assert.equal(initial.codexAnalysisModel, 'gpt-6.1-sol')
+    assert.equal(initial.claudeAnalysisModel, 'sonnet')
+    writeSettingsAt(directory, { ...initial, codexAnalysisModel: 'gpt-5.6-terra', claudeAnalysisModel: 'opus' })
+    const restarted = createCachedSettingsStore().get(directory)
+    assert.equal(restarted.codexAnalysisModel, 'gpt-5.6-terra')
+    assert.equal(restarted.claudeAnalysisModel, 'opus')
+  })
+
   it('preserves an independent error-reporting choice across offline toggles, restart, and repairs', async () => {
     const directory = await temporarySettingsDirectory()
     const document: Record<string, unknown> = { ...DEFAULT_SETTINGS, settingsSchemaVersion: 1, settingsGeneration: 1 }

@@ -85,7 +85,8 @@ export type InterfaceLanguage = 'system' | AppLocale
 export type InterfaceTheme = 'system' | 'light' | 'dark'
 export type CaptureFilterMode = 'exclude' | 'include'
 
-export const CODEX_ANALYSIS_MODELS = ['gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5'] as const
+export const DEFAULT_CODEX_ANALYSIS_MODEL = 'gpt-6.1-sol'
+export const CODEX_ANALYSIS_MODELS = [DEFAULT_CODEX_ANALYSIS_MODEL, 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5'] as const
 export const CLAUDE_ANALYSIS_MODELS = ['sonnet', 'opus', 'haiku'] as const
 export const CODEX_ANALYSIS_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'] as const
 export const CLAUDE_ANALYSIS_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
@@ -119,7 +120,14 @@ export interface CodexModel {
 // Only used before the first successful catalog fetch.
 export const FALLBACK_CODEX_MODELS: CodexModel[] = CODEX_ANALYSIS_MODELS.map((model) => ({
   model,
-  displayName: model === 'gpt-5.5' ? 'GPT-5.5' : model === 'gpt-5.6-terra' ? 'GPT-5.6 Terra' : 'GPT-5.6 Luna',
+  displayName:
+    model === DEFAULT_CODEX_ANALYSIS_MODEL
+      ? 'GPT-6.1 Sol'
+      : model === 'gpt-5.5'
+        ? 'GPT-5.5'
+        : model === 'gpt-5.6-terra'
+          ? 'GPT-5.6 Terra'
+          : 'GPT-5.6 Luna',
   supportedReasoningEfforts: CODEX_ANALYSIS_EFFORTS.filter((effort) =>
     model === 'gpt-5.5' ? effort !== 'max' && effort !== 'ultra' : model !== 'gpt-5.6-luna' || effort !== 'ultra'
   ),

@@ -70,7 +70,6 @@ import {
   isInboxTaskUnread,
   reconcileInboxTaskDraft,
   sameInboxTaskDraft,
-  selectedInboxTask,
 } from './inboxTasks'
 import { ListContextMenu } from './ListContextMenu'
 import { compactMarkdownContentClassName, MarkdownContent } from './MarkdownContent'
@@ -130,14 +129,8 @@ export function InboxView() {
   const searchParams = useSearchParams()
   const requestedItemId = searchParams.get('item')
   const requestedWorkItem = lifecycle.items.find((item) => item.id === requestedItemId)
-  const requestedTaskIncludingCompleted = requestedWorkItem
-    ? { taskKey: requestedWorkItem.id, workItem: requestedWorkItem }
-    : null
-  const includeCompleted =
-    showCompleted ||
-    (requestedTaskIncludingCompleted?.workItem.lifecycle !== 'open' && requestedTaskIncludingCompleted != null)
-  const items = useMemo(() => inboxTasks(lifecycle.items, includeCompleted), [includeCompleted, lifecycle.items])
-  const requestedTask = selectedInboxTask(items, requestedItemId)
+  const requestedTask = requestedWorkItem ? { taskKey: requestedWorkItem.id, workItem: requestedWorkItem } : null
+  const items = useMemo(() => inboxTasks(lifecycle.items, showCompleted), [showCompleted, lifecycle.items])
   const hasExplicitSelection = Boolean(requestedItemId)
   const showRequestedDetail = hasExplicitSelection && requestedTask !== null
   const selected = hasExplicitSelection ? requestedTask : (items[0] ?? null)
@@ -266,7 +259,7 @@ export function InboxView() {
     return (
       <>
         <h1 className="sr-only">{t('Inbox')}</h1>
-        <InboxPageHeader item={null} showCompleted={includeCompleted} onShowCompletedChange={changeShowCompleted} />
+        <InboxPageHeader item={null} showCompleted={showCompleted} onShowCompletedChange={changeShowCompleted} />
         <main className="flex min-h-[22rem] grow items-center justify-center">
           <PendingIndicator size="lg" label={t('Inbox')} />
         </main>
@@ -290,12 +283,12 @@ export function InboxView() {
       {selected ? null : (
         <InboxPageHeader
           item={null}
-          showCompleted={includeCompleted}
+          showCompleted={showCompleted}
           onShowCompletedChange={changeShowCompleted}
           onCreate={() => setCreateOpen(true)}
         />
       )}
-      {items.length ? (
+      {items.length || selected ? (
         <div className="grid h-full min-h-0 grid-cols-1 bg-white md:grid-cols-[minmax(17rem,21rem)_minmax(0,1fr)]">
           <InboxList
             items={items}
@@ -323,7 +316,7 @@ export function InboxView() {
                 (showRequestedDetail || desktopDetailVisible)
               }
               showOnNarrow={showRequestedDetail}
-              showCompleted={includeCompleted}
+              showCompleted={showCompleted}
               onShowCompletedChange={changeShowCompleted}
               onSetLifecycle={setLifecycle}
               onCreate={() => setCreateOpen(true)}
