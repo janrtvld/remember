@@ -1,7 +1,7 @@
 {
   "name": "@remember/desktop",
   "productName": "Remember",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Local-first AI memory for your workday.",
   "author": "Remember",
   "private": true,
