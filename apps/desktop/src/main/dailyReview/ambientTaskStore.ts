@@ -262,12 +262,17 @@ export class AmbientTaskStore {
     )
   }
 
-  commitmentItem(identity: string, workdayId: string) {
+  commitmentItem(identity: string, ref: AmbientEvidenceRef) {
     const row = this.database
       .prepare(`SELECT a.work_item_id FROM ambient_task_identity a JOIN work_item w ON w.id = a.work_item_id
-        WHERE a.identity = ? AND (a.workday_id = ? OR w.lifecycle = 'open')
-        ORDER BY CASE WHEN a.workday_id = ? THEN 0 ELSE 1 END, w.updated_at DESC LIMIT 1`)
-      .get(identity, workdayId, workdayId)
+        WHERE a.identity = ? AND (a.workday_id = ? OR w.lifecycle = 'open'
+          OR (? = 'context' AND EXISTS (
+            SELECT 1 FROM ambient_task_source s
+            WHERE s.work_item_id = w.id AND s.kind = 'context' AND s.revision = ?
+          )))
+        ORDER BY CASE WHEN a.workday_id = ? THEN 0 WHEN w.lifecycle = 'open' THEN 1 ELSE 2 END,
+          w.updated_at DESC LIMIT 1`)
+      .get(identity, ref.workdayId, ref.kind, ref.revision, ref.workdayId)
     return row ? String(row.work_item_id) : null
   }
 

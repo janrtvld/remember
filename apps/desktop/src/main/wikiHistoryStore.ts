@@ -531,25 +531,30 @@ export function isWikiEvidenceRejected(
   const rejections = requiredDatabase()
     .prepare('SELECT content, evidence_json, rejected_at FROM wiki_evidence_rejection WHERE space_id = ? AND slug = ?')
     .all(spaceId, slug) as DatabaseRow[]
+  return rejections.some((rejection) => rejectedWikiEvidenceMatches(rejection, update))
+}
+
+function rejectedWikiEvidenceMatches(
+  rejection: DatabaseRow,
+  update: Pick<WikiPageUpdate, 'content' | 'summary' | 'evidence'>
+) {
   const evidence = update.evidence ?? []
-  return rejections.some((rejection) => {
-    const previous = proposalEvidence(rejection.evidence_json)
-    if (evidence.length && evidence.every((entry) => repeatedEvidencePassage(entry, previous))) return true
-    // A later original user statement can reinstate or narrow an earlier belief.
-    // Old material or a new assistant paraphrase cannot undo explicit feedback.
-    const hasNewUserEvidence = evidence.some(
-      (entry) => entry.role === 'user' && entry.observedAt > number(rejection.rejected_at)
+  const previous = proposalEvidence(rejection.evidence_json)
+  if (evidence.length && evidence.every((entry) => repeatedEvidencePassage(entry, previous))) return true
+  // A later original user statement can reinstate or narrow an earlier belief.
+  // Old material or a new assistant paraphrase cannot undo explicit feedback.
+  const hasNewUserEvidence = evidence.some(
+    (entry) => entry.role === 'user' && entry.observedAt > number(rejection.rejected_at)
+  )
+  if (hasNewUserEvidence) return false
+  if (wikiProposalContentKey(update.content ?? update.summary) === wikiProposalContentKey(text(rejection.content)))
+    return true
+  return (
+    evidence.length > 0 &&
+    evidence.every((entry) =>
+      previous.some((prior) => comparableEvidenceQuote(prior.quote) === comparableEvidenceQuote(entry.quote))
     )
-    if (hasNewUserEvidence) return false
-    if (wikiProposalContentKey(update.content ?? update.summary) === wikiProposalContentKey(text(rejection.content)))
-      return true
-    return (
-      evidence.length > 0 &&
-      evidence.every((entry) =>
-        previous.some((prior) => comparableEvidenceQuote(prior.quote) === comparableEvidenceQuote(entry.quote))
-      )
-    )
-  })
+  )
 }
 
 function presentProposal(row: DatabaseRow): KnowledgeSuggestion {
@@ -580,12 +585,16 @@ export function createWikiProposal(input: CreateWikiProposalInput) {
     if (existing) return presentProposal(existing)
     const prior = current
       .prepare(`
-      SELECT * FROM wiki_proposal WHERE space_id = ? AND slug = ? ORDER BY created_at DESC
+      SELECT p.*, r.rejected_at FROM wiki_proposal p
+      LEFT JOIN wiki_evidence_rejection r ON r.revision_id = 'proposal:' || p.id
+      WHERE p.space_id = ? AND p.slug = ? ORDER BY p.created_at DESC
     `)
       .all(input.spaceId, input.slug) as DatabaseRow[]
     const contentKey = wikiProposalContentKey(input.content)
     const evidence = input.evidence ?? []
     const duplicate = prior.find((row) => {
+      if (text(row.status) === 'dismissed' && row.rejected_at != null && rejectedWikiEvidenceMatches(row, input))
+        return true
       const previousEvidence = proposalEvidence(row.evidence_json)
       const repeatedEvidence =
         evidence.length > 0 && evidence.every((entry) => repeatedEvidencePassage(entry, previousEvidence))
@@ -638,7 +647,11 @@ export function wikiProposalFeedback(targets: Array<{ spaceId: string; slug: str
     const rows = requiredDatabase()
       .prepare(`
       SELECT title, content, summary, status, evidence_json FROM wiki_proposal
-      WHERE space_id = ? AND slug = ? ORDER BY created_at DESC LIMIT 12
+      WHERE space_id = ? AND slug = ?
+        AND NOT EXISTS (
+          SELECT 1 FROM wiki_evidence_rejection WHERE revision_id = 'proposal:' || wiki_proposal.id
+        )
+      ORDER BY created_at DESC LIMIT 12
     `)
       .all(spaceId, slug) as DatabaseRow[]
     const proposals = rows.map((row) => ({
@@ -714,6 +727,17 @@ export function getWikiProposal(id: string) {
 export function setWikiProposalStatus(id: string, status: Extract<KnowledgeSuggestionStatus, 'applied' | 'dismissed'>) {
   return transaction(() => {
     const current = requiredDatabase()
+    if (status === 'dismissed') {
+      current
+        .prepare(`
+          INSERT OR IGNORE INTO wiki_evidence_rejection (
+            revision_id, space_id, slug, title, content, summary, evidence_json, rejected_at
+          )
+          SELECT 'proposal:' || id, space_id, slug, title, content, summary, evidence_json, ?
+          FROM wiki_proposal WHERE id = ? AND status = 'pending'
+        `)
+        .run(Date.now(), id)
+    }
     const appliedAt = status === 'applied' ? Date.now() : null
     current.prepare('UPDATE wiki_proposal SET status = ?, applied_at = ? WHERE id = ?').run(status, appliedAt, id)
     const row = current.prepare('SELECT * FROM wiki_proposal WHERE id = ?').get(id) as DatabaseRow | undefined

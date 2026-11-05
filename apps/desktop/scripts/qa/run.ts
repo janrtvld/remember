@@ -1911,14 +1911,17 @@ async function learning() {
   checks.push(
     'Background worker commits Personal Auto knowledge and a separate Suggest proposal without a manual processing trigger while Day/audio analysis is off'
   )
-  await target.goto(`${webUrl}/day/knowledge/?id=${learningDayId}`)
+  await target.goto(`${webUrl}/wiki/page/?space=personal&slug=${encodeURIComponent(personalPage.slug)}`)
   await target
-    .locator('section[aria-labelledby="personal-wiki-changes-heading"]')
-    .getByText(personalPage.title)
+    .getByRole('textbox', { name: 'Page content', exact: true })
+    .getByText(personal, { exact: true })
     .waitFor()
-  await target.locator('section[aria-labelledby="knowledge-suggestions-heading"]').getByText(proposal.title).waitFor()
-  await target.screenshot({ path: join(runDirectory, 'learning-day-wiki.png') })
-  checks.push('Day renders agent-generated Personal changes and Suggest proposals on the day the Wiki was updated')
+  await target.screenshot({ path: join(runDirectory, 'learning-personal-page.png') })
+  await target.goto(`${webUrl}/wiki/suggestions/?space=${encodeURIComponent(teamId)}`)
+  await target.getByRole('region', { name: 'Suggestions', exact: true }).getByText(proposal.title).waitFor()
+  await target.getByRole('button', { name: 'Dismiss', exact: true }).waitFor({ state: 'visible' })
+  await target.screenshot({ path: join(runDirectory, 'learning-space-proposal.png') })
+  checks.push('Spaces render the learned Personal page and the separate reviewable knowledge proposal')
   await target.goto(`${webUrl}/agent/`)
   const traceRow = target
     .locator('#agent-trace-events > li')
@@ -2078,6 +2081,106 @@ async function learning() {
   checks.push(
     'Replaying the original journal after restart cannot recreate undone personal knowledge or a rejected project contribution'
   )
+  await closeElectron()
+  const writeFindingSession = (sessionId: string, observedAt: string) => {
+    const entries = [
+      { type: 'session_meta', timestamp: observedAt, payload: { id: sessionId } },
+      {
+        type: 'response_item',
+        timestamp: observedAt,
+        payload: {
+          type: 'message',
+          id: `${sessionId}-user`,
+          role: 'user',
+          content: [{ type: 'input_text', text: finding }],
+        },
+      },
+    ]
+    writeFileSync(
+      join(learningSources, 'codex', 'sessions', `${sessionId}.jsonl`),
+      `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`,
+      { mode: 0o600 }
+    )
+  }
+  const reaffirmedAt = new Date().toISOString()
+  writeFindingSession('qa-learning-reaffirmed', reaffirmedAt)
+  const reviewStartedAt = Date.now()
+  const review = await launch()
+  await waitForLearningStatus(
+    review,
+    (status) =>
+      status.pendingCount === 0 && (status.lastProcessedAt ?? 0) >= reviewStartedAt && status.status !== 'learning'
+  )
+  const reviewProposal = (await review.evaluate(() => window.remember.getWikiOverview())).suggestions.find(
+    (entry) => entry.suggestedSpaceId === teamId && entry.status === 'pending'
+  )
+  assert(reviewProposal, 'A later original user statement may propose previously rejected knowledge again')
+  await review.goto(`${webUrl}/wiki/suggestions/?space=${encodeURIComponent(teamId)}`)
+  const dismiss = review.getByRole('button', { name: 'Dismiss', exact: true })
+  await dismiss.waitFor({ state: 'visible' })
+  await review.screenshot({ path: join(runDirectory, 'learning-before-dismiss.png') })
+  await dismiss.click()
+  await dismiss.waitFor({ state: 'detached' })
+  const dismissed = (await review.evaluate(() => window.remember.getWikiOverview())).suggestions.find(
+    (entry) => entry.id === reviewProposal.id
+  )
+  assert.equal(dismissed?.status, 'dismissed')
+  await review.screenshot({ path: join(runDirectory, 'learning-after-dismiss.png') })
+  await review.evaluate((spaceId) => window.remember.updateWikiSpace({ spaceId, maintenanceMode: 'auto' }), teamId)
+  await closeElectron()
+
+  // A distinct original event before dismissal must reach inference rather than
+  // disappearing through the reader's same-origin deduplication.
+  writeFindingSession('qa-learning-old-copy', new Date(Date.parse(reaffirmedAt) + 1).toISOString())
+  const copyStartedAt = Date.now()
+  const copied = await launch()
+  await waitForLearningStatus(
+    copied,
+    (status) =>
+      status.pendingCount === 0 && (status.lastProcessedAt ?? 0) >= copyStartedAt && status.status !== 'learning'
+  )
+  const copiedJournal = new DatabaseSync(join(profile, 'daily-review', 'agent-activity.sqlite'), { readOnly: true })
+  try {
+    const spans = copiedJournal
+      .prepare('SELECT s.status FROM activity_span s JOIN activity_event e ON e.id = s.event_id WHERE e.session_id = ?')
+      .all('qa-learning-old-copy')
+    assert.equal(spans.length, 1, 'The distinct copied-source event must reach the learning worker')
+    assert.equal(spans[0]?.status, 'processed')
+  } finally {
+    copiedJournal.close()
+  }
+  assert(
+    !(await copied.evaluate((spaceId) => window.remember.listWikiPages(spaceId), teamId))
+      .find((entry) => entry.slug === 'research/qa-team')
+      ?.content.includes(finding),
+    'A copied old statement cannot bypass dismissal after switching the Space to Auto'
+  )
+  const afterCopy = (await copied.evaluate(() => window.remember.getWikiOverview())).suggestions.filter(
+    (entry) => entry.suggestedSpaceId === teamId
+  )
+  assert.equal(afterCopy.length, 2, 'Replaying old evidence must not accumulate another suggestion')
+  assert.equal(afterCopy.find((entry) => entry.id === reviewProposal.id)?.status, 'dismissed')
+  checks.push(
+    'Dismissing a visible knowledge suggestion survives restart and blocks a copied old statement under a new source ID, including after switching the Space to Auto'
+  )
+  await closeElectron()
+
+  writeFindingSession('qa-learning-explicit-correction', new Date().toISOString())
+  const correctionStartedAt = Date.now()
+  const corrected = await launch()
+  await waitForLearningStatus(
+    corrected,
+    (status) =>
+      status.pendingCount === 0 && (status.lastProcessedAt ?? 0) >= correctionStartedAt && status.status !== 'learning'
+  )
+  const correctedHistory = await corrected.evaluate(
+    (spaceId) => window.remember.getWikiPageHistory({ spaceId, slug: 'research/qa-team' }),
+    teamId
+  )
+  assert(correctedHistory.revisions[0]?.content.includes(finding))
+  assert.equal(correctedHistory.revisions[0]?.evidence?.[0]?.documentSourceId, 'qa-learning-explicit-correction')
+  writeJson('learning-dismissed-replay.json', { dismissed, afterCopy, correctedHistory })
+  checks.push('A genuinely later original user statement can reinstate dismissed knowledge with its new source')
   assert.deepEqual(rendererErrors, [], 'Unexpected renderer exceptions')
 }
 
@@ -3303,8 +3406,9 @@ async function main() {
       report.scope = 'Live Mac mini tool execution from the native chat and full Remember restart'
       await residentRemoteQa({ directory: runDirectory, launch, close: closeElectron, checks })
     } else if (mode === 'smoke' && process.argv.includes('--ambient-tasks')) {
-      report.scope = 'Live task ingestion, notification navigation and restart deduplication through real native IPC'
-      report.evidenceSource = 'Synthetic native context executable and deterministic Codex structured output'
+      report.scope =
+        'Captured evidence through the ordinary Day task writer, source navigation, dismissal and next-day restart'
+      report.evidenceSource = 'Synthetic native capture and a parsed fixture Day plan; no model or full Day refresh'
       let target = await launch()
       assert(electron)
       await ambientTasksQa(electron, target, runDirectory, desktopDirectory)
@@ -3313,7 +3417,7 @@ async function main() {
       assert(electron)
       await ambientTasksAfterRestartQa(electron, target, runDirectory)
       checks.push(
-        'Live context creates one source-linked task; native notification opens it; full restart and repeated commitment preserve one task and one notification'
+        'The ordinary Day writer preserves a dismissed task across restart and next-day exact-screen replay; a changed commitment remains eligible with its own source'
       )
     } else if (mode === 'smoke' && process.argv.includes('--living-spaces')) {
       report.scope = 'Living Spaces via native CLI, editor IPC, contribution readback and restart'

@@ -23,6 +23,8 @@ Generation and review share one ownership policy in `knowledgeOrganization.ts`. 
 
 Normal agent/Day/Timeline learning now considers self and collaborators explicitly. A bounded private self profile is supplied to Remember's local chat with a revision and source URL. Current source availability, exclusions and page revisions are checked again before relying on it. The change does not enable retired automatic external-agent hooks.
 
+Dismissing a pending knowledge proposal now records the same durable, page- and Space-scoped rejection used by undo. Replaying its content or quoted evidence under another source ID cannot create another proposal or bypass the rejection by switching the Space to Auto. A genuinely later original user statement can reinstate it; a newer assistant paraphrase cannot. Repeated dismissal preserves the original rejection time. Existing historical dismissals are not backfilled, and detecting semantically equivalent rewritten claims remains the evidence reviewer's responsibility.
+
 Search uses whole-word terms, supports a single collaborator name, and follows one bounded link hop among person and project pages in the selected local Space.
 
 Imported agent evidence resolves to the original journal event and must match provider, session, role, observation time and quotation. Expired, excluded, deleted or pre-consent text cannot be replaced with a quotation retained in a Wiki revision.

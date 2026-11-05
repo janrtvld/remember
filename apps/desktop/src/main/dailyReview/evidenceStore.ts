@@ -1001,6 +1001,7 @@ export class EvidenceStore {
           actionId: matchingActionPoint?.id ?? null,
           observedAt: input.observedAt,
           identity: reference,
+          ambientRef: null,
         }
       }
 
@@ -1016,26 +1017,22 @@ export class EvidenceStore {
         )
       )
         return null
-      const evidence = this.database
-        .prepare(
-          `SELECT c.timestamp, a.display_name, a.bundle_id
-           FROM context_evidence c JOIN application a ON a.id = c.application_id
-           WHERE c.id = ? AND c.workday_id = ?`
-        )
-        .get(evidenceId, input.workdayId) as DatabaseRow | undefined
+      const batchRef = sourceBatch?.find(
+        (ref) => (ref.kind === 'speech' ? `speech:${ref.sourceId}` : ref.sourceId) === evidenceId
+      )
+      const evidence = batchRef
+        ? this.ambientTasks.resolve(batchRef)
+        : sourceBatch
+          ? null
+          : this.ambientTasks.resolveSource(evidenceId)
+      if (!evidence || evidence.workdayId !== input.workdayId || (!sourceBatch && evidence.kind !== 'context'))
+        return null
       // Rendered Remember output is derived context, not a new user commitment.
       if (
-        evidence &&
-        (/^computer\.remember(?:\.|$)/i.test(stringValue(evidence.bundle_id)) ||
-          /^Remember(?:\s|$)/i.test(stringValue(evidence.display_name)))
+        evidence.kind === 'context' &&
+        (/^computer\.remember(?:\.|$)/i.test(evidence.bundleId) || /^Remember(?:\s|$)/i.test(evidence.appName))
       )
         return null
-      const speechRef = sourceBatch?.find(
-        (ref) => ref.kind === 'speech' && `speech:${ref.sourceId}` === evidenceId && ref.workdayId === input.workdayId
-      )
-      const speech = speechRef ? this.ambientTasks.resolve(speechRef) : null
-      const observedAt = evidence ? numberValue(evidence.timestamp) : speech?.observedAt
-      if (observedAt === undefined) return null
       return {
         kind: 'observed' as const satisfies WorkItemSource['kind'],
         label,
@@ -1043,8 +1040,9 @@ export class EvidenceStore {
         startTime: null,
         reference: null,
         actionId: null,
-        observedAt,
+        observedAt: evidence.observedAt,
         identity: evidenceId,
+        ambientRef: evidence,
       }
     }
     const addSource = (itemId: string, source: NonNullable<ReturnType<typeof resolveSource>>) => {
@@ -1074,10 +1072,7 @@ export class EvidenceStore {
           source.startTime,
           source.observedAt
         )
-      const ref = sourceBatch?.find(
-        (entry) => (entry.kind === 'speech' ? `speech:${entry.sourceId}` : entry.sourceId) === source.identity
-      )
-      if (ref) this.ambientTasks.recordTaskSource(itemId, id, ref)
+      if (source.ambientRef) this.ambientTasks.recordTaskSource(itemId, id, source.ambientRef)
       return inserted.changes > 0
     }
     const linkedItemId = (source: NonNullable<ReturnType<typeof resolveSource>>) => {
@@ -1102,11 +1097,9 @@ export class EvidenceStore {
         if (actionItemId && actionItemId !== task.id) continue
 
         if (!task.id) {
-          const ambientRef = sourceBatch?.find(
-            (entry) => (entry.kind === 'speech' ? `speech:${entry.sourceId}` : entry.sourceId) === source.identity
-          )
+          const ambientRef = source.ambientRef
           const commitment = ambientRef ? this.ambientTasks.commitmentIdentity(title, description, ambientRef) : null
-          const priorItemId = commitment ? this.ambientTasks.commitmentItem(commitment, input.workdayId) : null
+          const priorItemId = commitment && ambientRef ? this.ambientTasks.commitmentItem(commitment, ambientRef) : null
           const equivalent =
             commitment && !priorItemId
               ? [...items.values()].filter(
@@ -1118,8 +1111,10 @@ export class EvidenceStore {
               : []
           const priorItem = priorItemId ? items.get(priorItemId) : equivalent.length === 1 ? equivalent[0] : undefined
           if (priorItem) {
-            if (commitment) this.ambientTasks.recordCommitment(commitment, input.workdayId, priorItem.id)
-            if (priorItem.lifecycle === 'open') addSource(priorItem.id, source)
+            if (priorItem.lifecycle === 'open') {
+              if (commitment) this.ambientTasks.recordCommitment(commitment, input.workdayId, priorItem.id)
+              addSource(priorItem.id, source)
+            }
             continue
           }
           const itemId = analyzedWorkItemId([

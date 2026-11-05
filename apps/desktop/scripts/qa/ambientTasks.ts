@@ -7,6 +7,12 @@ import type { ElectronApplication, Page } from 'playwright-core'
 
 const title = 'Confirm ambient lifecycle'
 const text = 'Sent by Jan: I will confirm the ambient lifecycle result tomorrow. QA ambient commitment.'
+const nextCommitment = `${text} This is a new confirmation for a separate client delivery.`
+
+type CapturedTaskSource = { workdayId: string; sourceId: string; observedAt: number }
+declare global {
+  var qaCapturedDayTask: (text: string, apply: boolean) => Promise<CapturedTaskSource | null>
+}
 
 function replaceOnce(file: string, pattern: RegExp, replacement: string) {
   const source = readFileSync(file, 'utf8')
@@ -16,8 +22,28 @@ function replaceOnce(file: string, pattern: RegExp, replacement: string) {
 
 /** Install only in the runner's disposable source snapshot, before its build. */
 export function installAmbientTasksFixture(directory: string) {
+  assert(!directory.endsWith('/apps/desktop'), 'Install fixtures only in the disposable source snapshot')
   const input = join(directory, 'ambient-native-input.json')
+  const clockFile = join(directory, 'ambient-clock.json')
   writeFileSync(input, JSON.stringify({ text: 'Synthetic ambient capture is ready.' }))
+  writeFileSync(clockFile, JSON.stringify({ offset: 0 }))
+  writeFileSync(
+    join(directory, 'src/main/ambientQaClock.ts'),
+    `import { readFileSync } from 'node:fs'
+const NativeDate = globalThis.Date
+let offset = JSON.parse(readFileSync(${JSON.stringify(clockFile)}, 'utf8')).offset
+const timer = setInterval(() => { offset = JSON.parse(readFileSync(${JSON.stringify(clockFile)}, 'utf8')).offset }, 50)
+timer.unref()
+const now = () => NativeDate.now() + offset
+globalThis.Date = new Proxy(NativeDate, {
+  construct(target, args) { return Reflect.construct(target, args.length ? args : [now()]) },
+  apply() { return new NativeDate(now()).toString() },
+  get(target, key) { return key === 'now' ? now : Reflect.get(target, key) },
+})
+`
+  )
+  const entry = join(directory, 'src/main/index.ts')
+  writeFileSync(entry, `import './ambientQaClock'\n${readFileSync(entry, 'utf8')}`)
   const context = join(directory, 'ambient-context-fixture.cjs')
   writeFileSync(
     context,
@@ -27,7 +53,7 @@ const send = value => process.stdout.write(JSON.stringify(value)+'\\n');
 if (process.argv.includes('--permission-status') || process.argv.includes('--request-permissions')) {
  send({type:'permissions',accessibility:true,input_monitoring:true});
 } else {
- const emit = () => send({type:'context',timestamp:Date.now(),app_name:'Ambient QA',bundle_id:'test.remember.ambient-qa',window_title:'Synthetic sent commitment',text:JSON.parse(fs.readFileSync(${JSON.stringify(input)},'utf8')).text,text_source:'accessibility',trigger:'content-change',monitor_name:'QA',screenshot_path:'',url:'https://ambient-qa.invalid/sent'});
+ const emit = () => send({type:'context',timestamp:Date.now()+JSON.parse(fs.readFileSync(${JSON.stringify(clockFile)},'utf8')).offset,app_name:'Ambient QA',bundle_id:'test.remember.ambient-qa',window_title:'Synthetic sent commitment',text:JSON.parse(fs.readFileSync(${JSON.stringify(input)},'utf8')).text,text_source:'accessibility',trigger:'content-change',monitor_name:'QA',screenshot_path:'',url:'https://ambient-qa.invalid/sent'});
  emit(); const timer=setInterval(emit,1000);
  process.on('SIGINT',()=>{clearInterval(timer);process.exit(0)});
 }
@@ -39,50 +65,29 @@ if (process.argv.includes('--permission-status') || process.argv.includes('--req
     /function helperPath\(\) \{[\s\S]*?\n\}/,
     `function helperPath() { return ${JSON.stringify(context)} }`
   )
-
-  const executable = join(directory, 'ambient-codex-fixture.cjs')
-  writeFileSync(
-    executable,
-    `#!${process.execPath}
-const fs=require('node:fs');
-const send=value=>process.stdout.write(JSON.stringify(value)+'\\n');
-if(process.argv.includes('--version')) { console.log('codex-cli 0.0.0-ambient-qa'); process.exit(0) }
-if(process.argv.includes('login') && process.argv.includes('status')) { console.log('Logged in using ChatGPT'); process.exit(0) }
-if(!process.argv.includes('exec')) process.exit(2);
-let input='';process.stdin.setEncoding('utf8');process.stdin.on('data',chunk=>input+=chunk);
-process.stdin.on('end',()=>{
- const payload=JSON.parse(input.slice(input.lastIndexOf('\\n\\n')+2));
- if(!Array.isArray(payload.evidence)) throw new Error('Only ambient analysis is expected');
- const schemaAt=process.argv.indexOf('--output-schema');
- if(schemaAt<0 || !JSON.parse(fs.readFileSync(process.argv[schemaAt+1],'utf8')).required.includes('consideredEvidenceIds')) throw new Error('Missing production structured schema');
- const evidence=payload.evidence.find(entry=>entry.text.includes('QA ambient commitment.'));
- const answer={consideredEvidenceIds:payload.evidence.map(entry=>entry.evidenceId),proposed:evidence?[{id:null,titleChangeReason:null,title:${JSON.stringify(title)},description:'Confirm the ambient lifecycle result tomorrow.',prompt:'',aiSuggestion:null,context:evidence.text,returnPoint:{lastMove:'Commitment sent.',unresolved:'Confirmation pending.',nextMove:'Confirm the result.'},source:{kind:'task',evidenceId:evidence.evidenceId,label:'Synthetic sent commitment',detail:'Explicit synthetic user commitment.',conversationStartTime:null},evidenceQuote:evidence.text,ownership:'user',notify:true}]:[],changes:[]};
- send({type:'thread.started',thread_id:'qa-ambient-readonly'});
- send({type:'item.completed',item:{id:'answer',type:'agent_message',text:JSON.stringify(answer)}});
- send({type:'turn.completed',usage:{input_tokens:1,cached_input_tokens:0,output_tokens:1}});
-});
-`,
-    { mode: 0o700 }
-  )
-  replaceOnce(
-    join(directory, 'src/main/codexRuntime.ts'),
-    /export function bundledCodexExecutable\(\) \{[\s\S]*?\n\}/,
-    `export function bundledCodexExecutable() { return ${JSON.stringify(executable)} }`
-  )
   const main = join(directory, 'src/main/dailyReview/index.ts')
   writeFileSync(
     main,
     `${readFileSync(main, 'utf8')}
-const qaAmbientNotifications: Notification[] = []
-Notification.isSupported = () => true
-Notification.prototype.show = function () { qaAmbientNotifications.push(this) }
-Object.assign(globalThis, { qaAmbient: {
-  notifications: () => qaAmbientNotifications.map(entry => ({ title: entry.title, body: entry.body })),
-  click: (title: string) => {
-    const entry = qaAmbientNotifications.find(candidate => candidate.title === title)
-    if (!entry) throw new Error('qa-ambient-notification-missing')
-    entry.emit('click')
-  },
+import { parseDayMemory as qaParseTaskDayMemory } from './analysisFormat'
+Object.assign(globalThis, { qaCapturedDayTask: async (text: string, apply: boolean) => {
+  const store = getEvidenceStore()
+  const day = store.readSessionHeaders().sort((a, b) => b.startedAt-a.startedAt)[0]
+  if (!day) return null
+  const source = (await store.readAnalysisEvidence(day.id)).find(entry => entry.kind === 'screen-context' && entry.text === text)
+  if (!source) return null
+  if (apply) {
+    const memory = qaParseTaskDayMemory(JSON.stringify({ summary: '', openTasks: [{
+      id: null, titleChangeReason: null, title: ${JSON.stringify(title)}, description: 'Confirm the ambient lifecycle result tomorrow.',
+      prompt: '', aiSuggestion: null, context: source.text,
+      returnPoint: { lastMove: 'Commitment sent.', unresolved: 'Confirmation pending.', nextMove: 'Confirm the result.' },
+      source: { kind: 'task', evidenceId: source.evidenceId, label: 'Synthetic sent commitment', detail: 'Explicit synthetic user commitment.', conversationStartTime: null },
+    }], taskChanges: [] }))
+    // Exercise the ordinary Day writer without an ambient/proactive batch.
+    store.applyAnalyzedWorkItems({ workdayId: day.id, plan: { proposed: memory.openTasks ?? [], changes: [] }, conversations: [], analysisStartedAt: Date.now(), observedAt: Date.now() })
+    emitMemoryChanged()
+  }
+  return { workdayId: day.id, sourceId: source.evidenceId, observedAt: source.timestamp }
 } })
 `
   )
@@ -98,44 +103,32 @@ async function waitFor(check: () => Promise<boolean>, label: string, millisecond
 
 function inspect(directory: string) {
   const database = new DatabaseSync(join(directory, 'profile/daily-review/evidence.sqlite'), { readOnly: true })
-  const chat = new DatabaseSync(join(directory, 'profile/daily-review/assistant/conversation.sqlite'), {
-    readOnly: true,
-  })
   try {
     return {
       tasks: database
-        .prepare('SELECT id, title FROM work_item WHERE title = ?')
+        .prepare('SELECT id, title, lifecycle FROM work_item WHERE title = ? ORDER BY created_at, id')
         .all(title)
         .map((row) => ({ ...row })),
       sources: database
         .prepare(
-          'SELECT s.*, c.text FROM ambient_task_source s JOIN context_evidence c ON c.id = s.source_id WHERE c.text LIKE ?'
+          'SELECT s.*, c.workday_id, c.timestamp, c.text FROM ambient_task_source s JOIN context_evidence c ON c.id = s.source_id WHERE c.text LIKE ? ORDER BY c.timestamp, c.id'
         )
         .all(`${text}%`)
-        .map((row) => ({ ...row })),
-      cursor: database
-        .prepare(
-          'SELECT a.* FROM ambient_task_evidence a JOIN context_evidence c ON c.id = a.source_id WHERE c.text LIKE ?'
-        )
-        .all(`${text}%`)
-        .map((row) => ({ ...row })),
-      notifications: database
-        .prepare(
-          'SELECT n.* FROM ambient_task_notification n JOIN work_item w ON w.id = n.work_item_id WHERE w.title = ?'
-        )
-        .all(title)
-        .map((row) => ({ ...row })),
-      suggestions: chat
-        .prepare(
-          'SELECT s.*, m.role, m.text, m.status FROM assistant_task_suggestion s JOIN assistant_message m ON m.id = s.message_id'
-        )
-        .all()
         .map((row) => ({ ...row })),
     }
   } finally {
     database.close()
-    chat.close()
   }
+}
+
+async function capturedSource(electron: ElectronApplication, text: string) {
+  await waitFor(
+    async () => Boolean(await electron.evaluate((_electron, text) => globalThis.qaCapturedDayTask(text, false), text)),
+    'The native context parser must retain the exact synthetic screen on the current day'
+  )
+  const source = await electron.evaluate((_electron, text) => globalThis.qaCapturedDayTask(text, true), text)
+  assert(source)
+  return source
 }
 
 export async function ambientTasksQa(
@@ -144,14 +137,14 @@ export async function ambientTasksQa(
   directory: string,
   desktopDirectory: string
 ) {
-  const initialChat = await page.evaluate(() => window.remember.getAssistantConversation())
-  assert.deepEqual(initialChat.messages, [])
-  assert.equal(initialChat.activeTurnId, null)
+  assert(Math.abs((await electron.evaluate(() => Date.now())) - Date.now()) < 5_000)
   await page.evaluate(() =>
     window.remember.updateSettings({
       offlineMode: false,
       cloudAnalysisConsent: true,
-      liveTaskUpdates: true,
+      defaultAgentProvider: 'codex',
+      agentLearningEnabled: false,
+      liveTaskUpdates: false,
       frequentDayRefresh: false,
       audioCaptureEnabled: false,
       capturePaused: false,
@@ -163,123 +156,98 @@ export async function ambientTasksQa(
     () => page.evaluate(async () => (await window.remember.getState()).status === 'recording'),
     'Production capture startup must become active'
   )
-  const injectedAt = Date.now()
+  const provider = (await page.evaluate(() => window.remember.getState())).agent
+  assert.equal(provider.provider, 'codex')
+  assert.equal(provider.status, 'signed-out', 'The disposable profile must have no authenticated inference provider')
   writeFileSync(join(desktopDirectory, 'ambient-native-input.json'), JSON.stringify({ text }))
+  const source = await capturedSource(electron, text)
+  const state = inspect(directory)
+  assert.equal(state.tasks.length, 1)
+  assert.equal(state.tasks[0]?.lifecycle, 'open')
+  assert.equal(state.sources.length, 1)
+  assert.equal(state.sources[0]?.source_id, source.sourceId)
+  assert.equal(state.sources[0]?.text, text)
+  await page.goto(new URL(`/inbox/?item=${state.tasks[0]?.id}`, page.url()).toString())
+  const evidenceLink = page.getByRole('link', { name: /Open timeline|Open tijdlijn/ }).filter({ visible: true })
+  await evidenceLink.click()
+  await page.waitForURL((url) => url.pathname === '/day/timeline/' && Boolean(url.searchParams.get('timelineAt')))
+  assert.equal(new URL(page.url()).searchParams.get('id'), source.workdayId)
+  assert.equal(new URL(page.url()).searchParams.get('timelineAt'), String(source.observedAt))
+  await page.screenshot({ path: join(directory, 'ambient-task-source-timeline.png') })
+  await page.goto(new URL(`/inbox/?item=${state.tasks[0]?.id}`, page.url()).toString())
+  await page
+    .getByRole('button', { name: /Mark .* as not needed|Markeer .* als niet nodig/ })
+    .filter({ visible: true })
+    .click()
   await waitFor(
     () =>
       page.evaluate(
-        async (title) => (await window.remember.listWorkItems()).some((item) => item.title === title),
-        title
+        async (id) => (await window.remember.listWorkItems()).find((item) => item.id === id)?.lifecycle === 'abandoned',
+        String(state.tasks[0]?.id)
       ),
-    'Native context must create an ambient task without Day refresh'
+    'The actual not-needed control must close the task through native IPC'
   )
-  const createdAt = Date.now()
-  await waitFor(
-    () =>
-      electron.evaluate(
-        (_electron, title) =>
-          Reflect.get(globalThis, 'qaAmbient')
-            .notifications()
-            .some((entry: { title: string }) => entry.title === title),
-        title
-      ),
-    'Committed task must produce a native notification'
-  )
-  await electron.evaluate((_electron, title) => Reflect.get(globalThis, 'qaAmbient').click(title), title)
-  await page.waitForURL((url) => url.pathname === '/inbox/' && Boolean(url.searchParams.get('item')))
-  await waitFor(async () => {
-    const chat = await page.evaluate(() => window.remember.getAssistantConversation())
-    return chat.messages.length === 1 && chat.messages[0]?.text.includes(title) === true
-  }, 'The same source-backed task must appear as one persistent assistant offer')
-  const state = inspect(directory)
-  assert.equal(state.tasks.length, 1)
-  assert(state.sources.length >= 1)
-  assert(state.cursor.every((row) => typeof row.completed_at === 'number'))
-  assert.equal(state.notifications.length, 1)
-  assert.equal(typeof state.notifications[0]?.delivered_at, 'number')
-  assert.equal(typeof state.notifications[0]?.chat_recorded_at, 'number')
-  assert.equal(state.suggestions.length, 1)
-  const suggestion = state.suggestions[0]
-  assert(suggestion)
-  assert.equal(suggestion.task_id, state.tasks[0]?.id)
-  assert.equal(suggestion.event_id, `ambient-task:${suggestion.task_id}`)
-  assert.equal(suggestion.role, 'assistant')
-  assert.equal(suggestion.status, 'completed')
-  assert.deepEqual(JSON.parse(String(suggestion.evidence_ids)), [
-    ...new Set(state.sources.map((source) => source.source_id)),
-  ])
-  const chat = await page.evaluate(() => window.remember.getAssistantConversation())
-  assert.equal(chat.activeTurnId, null, 'An observed offer must not start tool work')
-  assert.equal(chat.messages.filter((message) => message.role === 'user').length, 0)
-  assert.equal(new URL(page.url()).searchParams.get('item'), state.tasks[0]?.id)
-  await page.screenshot({ path: join(directory, 'ambient-task-notification-open.png') })
-  await page.goto(new URL('/assistant/', page.url()).toString())
-  const taskLink = page.locator(`a[href="/inbox/?item=${state.tasks[0]?.id}"]`)
-  await taskLink.waitFor()
-  await page.screenshot({ path: join(directory, 'ambient-task-assistant-offer.png') })
-  await taskLink.click()
-  await page.waitForURL((url) => url.pathname === '/inbox/' && url.searchParams.get('item') === state.tasks[0]?.id)
+  await page.screenshot({ path: join(directory, 'ambient-task-dismissed.png') })
+  await page.evaluate(() => window.remember.updateSettings({ capturePaused: true }))
   writeFileSync(
     join(directory, 'ambient-before-restart.json'),
-    JSON.stringify({ ...state, desktopDirectory, injectedAt, createdAt, elapsedMs: createdAt - injectedAt }, null, 2)
+    JSON.stringify({ ...inspect(directory), desktopDirectory, source, providerStatus: provider.status }, null, 2)
   )
+  writeFileSync(join(desktopDirectory, 'ambient-clock.json'), JSON.stringify({ offset: 24 * 60 * 60_000 }))
 }
 
 export async function ambientTasksAfterRestartQa(electron: ElectronApplication, page: Page, directory: string) {
+  const before = JSON.parse(readFileSync(join(directory, 'ambient-before-restart.json'), 'utf8'))
+  assert(Math.abs((await electron.evaluate(() => Date.now())) - Date.now() - 24 * 60 * 60_000) < 5_000)
+  await page.evaluate(() => window.remember.resumeCapture())
   await waitFor(
     () => page.evaluate(async () => (await window.remember.getState()).status === 'recording'),
     'Capture must resume after full restart'
   )
-  const before = JSON.parse(readFileSync(join(directory, 'ambient-before-restart.json'), 'utf8'))
-  writeFileSync(
-    join(before.desktopDirectory, 'ambient-native-input.json'),
-    JSON.stringify({ text: `${text} Read again after restart.` })
-  )
-  await waitFor(async () => {
-    const state = inspect(directory)
-    return (
-      state.cursor.length > before.cursor.length && state.cursor.every((row) => typeof row.completed_at === 'number')
-    )
-  }, 'New native frame must be analyzed and acknowledged after the real batch delay')
+  const source = await capturedSource(electron, text)
+  assert.notEqual(source.workdayId, before.source.workdayId, 'The replay must belong to the next recorded day')
+  assert.notEqual(source.sourceId, before.source.sourceId)
   const after = inspect(directory)
   assert.deepEqual(after.tasks, before.tasks)
-  assert(after.cursor.length > before.cursor.length, 'Restart must ingest a genuinely new native context frame')
-  assert(after.cursor.every((row) => typeof row.completed_at === 'number'))
-  assert.deepEqual(after.notifications, before.notifications)
-  assert.deepEqual(after.suggestions, before.suggestions)
+  assert.equal(after.tasks[0]?.lifecycle, 'abandoned')
+  writeFileSync(join(before.desktopDirectory, 'ambient-native-input.json'), JSON.stringify({ text: nextCommitment }))
+  const freshSource = await capturedSource(electron, nextCommitment)
+  const final = inspect(directory)
+  assert.equal(final.tasks.length, 2)
+  assert.equal(final.tasks.find((task) => task.id === before.tasks[0]?.id)?.lifecycle, 'abandoned')
+  const fresh = final.tasks.find((task) => task.lifecycle === 'open')
+  assert(fresh)
+  assert.equal(freshSource.workdayId, source.workdayId)
+  assert(final.sources.some((entry) => entry.work_item_id === fresh.id && entry.text === nextCommitment))
+  await page.goto(new URL(`/inbox/?item=${fresh.id}`, page.url()).toString())
+  await page
+    .getByRole('button', { name: /Mark .* as not needed|Markeer .* als niet nodig/ })
+    .filter({ visible: true })
+    .waitFor()
+  await page.screenshot({ path: join(directory, 'ambient-new-commitment.png') })
   const chat = await page.evaluate(() => window.remember.getAssistantConversation())
-  assert.equal(chat.messages.length, 1)
-  assert.equal(chat.messages[0]?.role, 'assistant')
+  assert.deepEqual(chat.messages, [])
   assert.equal(chat.activeTurnId, null)
-  assert.equal(
-    await electron.evaluate(
-      (_electron, title) =>
-        Reflect.get(globalThis, 'qaAmbient')
-          .notifications()
-          .filter((entry: { title: string }) => entry.title === title).length,
-      title
-    ),
-    0
-  )
   writeFileSync(
     join(directory, 'ambient-proof.json'),
     JSON.stringify(
       {
         startupThroughNativeContextParser: true,
-        liveTaskWithoutDayRefresh: true,
-        exactPersistedSources: after.sources,
-        acknowledgedSources: after.cursor.length,
-        notificationOpenedTask: true,
+        ordinaryDayTaskWriterWithoutBatch: true,
+        originalSource: before.source,
+        nextDayReplaySource: source,
+        freshSource,
+        exactPersistedSources: final.sources,
+        taskSourceTimelineOpened: true,
+        userDismissedTaskInRenderer: true,
         fullRestart: true,
-        repeatedCommitmentDeduplicated: true,
-        notificationNotReplayed: true,
-        persistentAssistantOffers: after.suggestions,
-        assistantTaskLinkOpenedSameTask: true,
-        assistantOfferNotReplayed: true,
+        identicalScreenOnNextDayStayedAbandoned: true,
+        freshNextDayCommitmentCreated: true,
+        finalTasks: final.tasks,
         noAutomaticUserMessageOrToolTurn: true,
-        observedContextToTaskMs: before.elapsedMs,
+        providerStatus: before.providerStatus,
         boundary:
-          'Synthetic native context executable and deterministic Codex exec JSON through production parser, SDK, worker, SQLite, notification click, preload and renderer; no physical screen/audio capture or live model judgment.',
+          'Synthetic native context through the real parser and storage, followed by an isolated helper invoking parseDayMemory and the ordinary Day task writer without an ambient/proactive batch. Real preload, renderer controls, source navigation and restart; clock advances one day. No full Day refresh, live model judgment, physical capture or notification claim.',
       },
       null,
       2

@@ -14,6 +14,10 @@ This iteration follows the October 29 review: 27 verdicts and one additional not
 - Preserve unfinished outcome identity after partial progress. Missing observations do not prove completion or create new verification obligations.
 - No automatic migration, deletion, or merging of existing user tasks is performed by this change. Existing multiple fragments need a separately grounded reconciliation; the model must not treat unrelated tasks as duplicates.
 
+Exact screen replays now preserve closed task identity across days and restart. Matching uses the existing task outcome, capture surface and full-text source hash; it adds no retained text or schema. A closed replay does not reserve today's identity, so a changed screen with a new commitment remains eligible later that day. Distinct outcomes and capture surfaces, explicit reopening and a new spoken occurrence retain their existing behavior. This protects exact replays; recognizing semantically equivalent rewritten evidence remains the model's responsibility.
+
+Ordinary Day analysis and observation analysis now register the same validated context-source identity and hash for newly created tasks. Historical Day tasks that lack those records are not backfilled or heuristically matched across days; their existing replay limitations remain. New source-backed tasks converge through either writer, with source availability, explicit batch scope, and user edits preserved.
+
 ## Evaluation entry point
 
 ```sh

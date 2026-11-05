@@ -9,6 +9,7 @@ import { ResidentAgentStore } from '../../residentAgentStore'
 import { DEFAULT_SETTINGS } from '../../settingsStore'
 import { parseAmbientTaskPlan } from '../ambientTaskPolicy'
 import { createAmbientTaskAuthority, createAmbientTaskWorker } from '../ambientTaskWorker'
+import { parseDayMemory } from '../analysisFormat'
 import { EvidenceStore } from '../evidenceStore'
 
 const cleanups: Array<() => void> = []
@@ -45,7 +46,14 @@ function fixture() {
     },
   }
 }
-function context(store: EvidenceStore, id = 'screen', content = text, workdayId = 'day', timestamp = Date.now()) {
+function context(
+  store: EvidenceStore,
+  id = 'screen',
+  content = text,
+  workdayId = 'day',
+  timestamp = Date.now(),
+  surface: { appName?: string; url?: string } = {}
+) {
   store.appendContextMoment(
     workdayId,
     {
@@ -58,6 +66,7 @@ function context(store: EvidenceStore, id = 'screen', content = text, workdayId 
       trigger: 'content-change',
       monitorName: '',
       screenshotPath: '',
+      ...surface,
     },
     null
   )
@@ -66,12 +75,13 @@ function speech(
   store: EvidenceStore,
   id = 'segment',
   content = text,
-  rejectionReason: SpeechSegment['rejectionReason'] = null
+  rejectionReason: SpeechSegment['rejectionReason'] = null,
+  workdayId = 'day'
 ) {
   store.appendAudioMoment(
     {
       id: `audio-${id}`,
-      sessionId: 'day',
+      sessionId: workdayId,
       source: 'microphone',
       startedAt: Date.now() - 10_000,
       durationMs: 10_000,
@@ -83,7 +93,7 @@ function speech(
   store.appendSpeechSegments([
     {
       id,
-      workdayId: 'day',
+      workdayId,
       chunkId: `audio-${id}`,
       source: 'microphone',
       startedAt: Date.now() - 9_000,
@@ -136,7 +146,91 @@ function apply(store: EvidenceStore, evidence: ReturnType<EvidenceStore['ambient
     },
   })
 }
+
+function applyDay(store: EvidenceStore, evidenceId = 'screen', workdayId = 'day') {
+  const result = output(evidenceId)
+  const memory = parseDayMemory(
+    JSON.stringify({ summary: '', openTasks: result.proposed, taskChanges: result.changes })
+  )
+  return store.applyAnalyzedWorkItems({
+    workdayId,
+    plan: { proposed: memory.openTasks ?? [], changes: memory.taskChanges ?? [] },
+    conversations: [],
+    analysisStartedAt: Date.now(),
+    observedAt: Date.now(),
+  })
+}
 const allow = () => true
+
+test('ordinary Day analysis preserves rejected screen commitments across days and restart', () => {
+  const f = fixture()
+  context(f.store)
+  assert.equal(applyDay(f.store).created, 1)
+  const item = f.store.listWorkItems()[0]
+  const day = f.store.readSessions()[0]
+  assert(item && day)
+  f.store.setWorkItemLifecycle(item.id, 'abandoned')
+  f.reopen()
+  f.store.upsertSession({
+    ...day,
+    id: 'tomorrow',
+    localDay: undefined,
+    startedAt: day.startedAt + 24 * 60 * 60_000,
+    contextMoments: [],
+  })
+  context(f.store, 'old-message-again', text, 'tomorrow')
+  assert.equal(applyDay(f.store, 'old-message-again', 'tomorrow').created, 0)
+  f.reopen()
+  assert.equal(f.store.listWorkItems().length, 1)
+  assert.equal(f.store.getWorkItem(item.id)?.lifecycle, 'abandoned')
+  assert.equal(f.store.ambientTasks.taskSourceIds(item.id).length, 1)
+
+  context(f.store, 'fresh-message', `${text} Dit is een nieuwe offerte voor een nieuwe opdracht.`, 'tomorrow')
+  assert.equal(applyDay(f.store, 'fresh-message', 'tomorrow').created, 1)
+  f.reopen()
+  assert.equal(f.store.listWorkItems().length, 2)
+  assert.equal(f.store.listWorkItems().filter((entry) => entry.lifecycle === 'open').length, 1)
+})
+
+test('ordinary Day and observation analysis share one open commitment and source provenance', () => {
+  const f = fixture()
+  context(f.store)
+  applyDay(f.store)
+  const item = f.store.listWorkItems()[0]
+  const day = f.store.readSessions()[0]
+  assert(item && day)
+  assert.equal(f.store.ambientTasks.taskSourceIds(item.id).length, 1)
+  f.store.updateWorkItem(item.id, 'Mijn eigen titel', item.description)
+  f.reopen()
+  f.store.upsertSession({
+    ...day,
+    id: 'tomorrow',
+    localDay: undefined,
+    startedAt: day.startedAt + 24 * 60 * 60_000,
+    contextMoments: [],
+  })
+  context(f.store, 'new-observation', `${text} Een nieuw gelezen bericht.`, 'tomorrow')
+  const observation = f.store.ambientTasks.resolveSource('new-observation')
+  assert(observation)
+  apply(f.store, [observation], output('new-observation'))
+  f.reopen()
+  assert.equal(f.store.listWorkItems().length, 1)
+  assert.equal(f.store.getWorkItem(item.id)?.title, 'Mijn eigen titel')
+  assert.equal(f.store.ambientTasks.taskSourceIds(item.id).length, 2)
+})
+
+test('ordinary Day sources remain scoped to retained context and never admit unbatched speech or Remember output', () => {
+  const f = fixture()
+  speech(f.store)
+  assert.equal(applyDay(f.store, 'speech:segment').created, 0)
+  context(f.store)
+  assert.equal(applyDay(f.store, 'screen', 'another-day').created, 0)
+  context(f.store, 'remember-output', `${text} Derived reminder.`, 'day', Date.now(), { appName: 'Remember' })
+  assert.equal(applyDay(f.store, 'remember-output').created, 0)
+  f.store.deleteEvidenceSince(Date.now() - 1_000)
+  assert.equal(applyDay(f.store).created, 0)
+  assert.equal(f.store.listWorkItems().length, 0)
+})
 
 test('repeated commitment frames reuse durable identity after title edits and never recreate closed work', () => {
   const f = fixture()
@@ -211,6 +305,165 @@ test('a new next-day occurrence may create work after completion while open comm
     assert.equal(f.store.listWorkItems().length, complete ? 2 : 1)
     assert.equal(f.store.listWorkItems().filter((entry) => entry.lifecycle === 'open').length, 1)
   }
+})
+
+test('recapturing the same screen on another day preserves closed work without suppressing a new commitment', () => {
+  for (const lifecycle of ['abandoned', 'completed', 'superseded'] as const) {
+    const f = fixture()
+    context(f.store)
+    apply(f.store, f.store.ambientTasks.batch(Date.now() + 31_000, allow, allow))
+    const item = f.store.listWorkItems()[0]
+    const day = f.store.readSessions()[0]
+    assert(item && day)
+    f.store.setWorkItemLifecycle(item.id, lifecycle)
+    f.reopen()
+    f.store.upsertSession({
+      ...day,
+      id: 'tomorrow',
+      localDay: undefined,
+      startedAt: day.startedAt + 24 * 60 * 60_000,
+      contextMoments: [],
+    })
+    context(f.store, 'old-message-again', text, 'tomorrow')
+    apply(f.store, f.store.ambientTasks.batch(Date.now() + 31_000, allow, allow), output('old-message-again'))
+    f.reopen()
+    assert.equal(f.store.listWorkItems().length, 1, 'the same old message is not a new obligation')
+    assert.equal(f.store.getWorkItem(item.id)?.lifecycle, lifecycle)
+
+    const fresh = `${text} Dit is een nieuwe offerte voor een nieuwe opdracht.`
+    context(f.store, 'new-message', fresh, 'tomorrow')
+    apply(f.store, f.store.ambientTasks.batch(Date.now() + 31_000, allow, allow), output('new-message'))
+    f.reopen()
+    assert.equal(f.store.listWorkItems().length, 2)
+    assert.equal(f.store.listWorkItems().filter((entry) => entry.lifecycle === 'open').length, 1)
+  }
+})
+
+test('screen replay matching keeps distinct outcomes and explicitly reopened work', () => {
+  const f = fixture()
+  context(f.store)
+  apply(f.store, f.store.ambientTasks.batch(Date.now() + 31_000, allow, allow))
+  const item = f.store.listWorkItems()[0]
+  const day = f.store.readSessions()[0]
+  assert(item && day)
+  f.store.setWorkItemLifecycle(item.id, 'abandoned')
+  f.store.upsertSession({
+    ...day,
+    id: 'tomorrow',
+    localDay: undefined,
+    startedAt: day.startedAt + 24 * 60 * 60_000,
+    contextMoments: [],
+  })
+  context(f.store, 'different-outcome', text, 'tomorrow')
+  const different = output('different-outcome')
+  const differentTask = different.proposed[0]
+  assert(differentTask)
+  differentTask.title = 'Bespreek de offerte'
+  differentTask.description = 'Bespreek de offerte met de klant.'
+  apply(f.store, f.store.ambientTasks.batch(Date.now() + 31_000, allow, allow), different)
+  assert.equal(f.store.listWorkItems().length, 2)
+
+  f.store.setWorkItemLifecycle(item.id, 'open')
+  f.reopen()
+  context(f.store, 'reopened-message', text, 'tomorrow')
+  apply(f.store, f.store.ambientTasks.batch(Date.now() + 31_000, allow, allow), output('reopened-message'))
+  assert.equal(f.store.listWorkItems().length, 2)
+  assert.equal(f.store.getWorkItem(item.id)?.lifecycle, 'open')
+  assert.equal(f.store.ambientTasks.taskSourceIds(item.id).length, 2)
+})
+
+test('an open recurrence takes precedence over a more recently edited closed replay', (t) => {
+  let now = Date.UTC(2026, 10, 5, 10)
+  t.mock.method(Date, 'now', () => now)
+  const f = fixture()
+  context(f.store)
+  apply(f.store, f.store.ambientTasks.batch(now + 31_000, allow, allow))
+  const closed = f.store.listWorkItems()[0]
+  const day = f.store.readSessions()[0]
+  assert(closed && day)
+  f.store.setWorkItemLifecycle(closed.id, 'abandoned')
+  now += 24 * 60 * 60_000
+  f.store.upsertSession({
+    ...day,
+    id: 'tomorrow',
+    localDay: undefined,
+    startedAt: day.startedAt + 24 * 60 * 60_000,
+    contextMoments: [],
+  })
+  context(f.store, 'fresh-commitment', `${text} Nieuwe expliciete opdracht vandaag.`, 'tomorrow')
+  apply(f.store, f.store.ambientTasks.batch(now + 31_000, allow, allow), output('fresh-commitment'))
+  const open = f.store.listWorkItems().find((item) => item.lifecycle === 'open')
+  assert(open)
+  now += 1_000
+  const updatedClosed = f.store.setWorkItemLifecycle(closed.id, 'completed')
+  assert(updatedClosed.updatedAt > open.updatedAt)
+  f.reopen()
+  now += 24 * 60 * 60_000
+  f.store.upsertSession({
+    ...day,
+    id: 'third-day',
+    localDay: undefined,
+    startedAt: day.startedAt + 2 * 24 * 60 * 60_000,
+    contextMoments: [],
+  })
+  context(f.store, 'old-screen-again', text, 'third-day')
+  apply(f.store, f.store.ambientTasks.batch(now + 31_000, allow, allow), output('old-screen-again'))
+  f.reopen()
+  assert.equal(f.store.listWorkItems().length, 2)
+  assert.equal(f.store.getWorkItem(open.id)?.lifecycle, 'open')
+  assert.equal(f.store.ambientTasks.taskSourceIds(open.id).length, 2)
+  assert.equal(f.store.getWorkItem(closed.id)?.lifecycle, 'completed')
+  assert.equal(f.store.ambientTasks.taskSourceIds(closed.id).length, 1)
+})
+
+test('identical screen text on a new app or document remains a distinct occurrence', () => {
+  for (const surface of [
+    { appName: 'Mail', url: 'https://mail.invalid/thread/new' },
+    { appName: 'Notes', url: 'https://mail.invalid/thread/original' },
+  ]) {
+    const f = fixture()
+    context(f.store, 'screen', text, 'day', Date.now(), {
+      appName: 'Mail',
+      url: 'https://mail.invalid/thread/original',
+    })
+    apply(f.store, f.store.ambientTasks.batch(Date.now() + 31_000, allow, allow))
+    const item = f.store.listWorkItems()[0]
+    const day = f.store.readSessions()[0]
+    assert(item && day)
+    f.store.setWorkItemLifecycle(item.id, 'abandoned')
+    f.reopen()
+    f.store.upsertSession({
+      ...day,
+      id: 'tomorrow',
+      localDay: undefined,
+      startedAt: day.startedAt + 24 * 60 * 60_000,
+      contextMoments: [],
+    })
+    context(f.store, 'new-surface', text, 'tomorrow', Date.now(), surface)
+    apply(f.store, f.store.ambientTasks.batch(Date.now() + 31_000, allow, allow), output('new-surface'))
+    assert.equal(f.store.listWorkItems().length, 2)
+  }
+})
+
+test('the same spoken words on another day can establish a new commitment', () => {
+  const f = fixture()
+  speech(f.store)
+  apply(f.store, f.store.ambientTasks.batch(Date.now() + 3_000, allow, allow), output('speech:segment'))
+  const item = f.store.listWorkItems()[0]
+  const day = f.store.readSessions()[0]
+  assert(item && day)
+  f.store.setWorkItemLifecycle(item.id, 'completed')
+  f.reopen()
+  f.store.upsertSession({
+    ...day,
+    id: 'tomorrow',
+    localDay: undefined,
+    startedAt: day.startedAt + 24 * 60 * 60_000,
+    contextMoments: [],
+  })
+  speech(f.store, 'new-request', text, null, 'tomorrow')
+  apply(f.store, f.store.ambientTasks.batch(Date.now() + 3_000, allow, allow), output('speech:new-request'))
+  assert.equal(f.store.listWorkItems().length, 2)
 })
 
 test('a Day analysis started before live processing cannot mutate tasks after enablement or a quick disable', () => {

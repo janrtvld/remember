@@ -18,10 +18,13 @@ Run from the repository root:
 | --- | --- |
 | `pnpm qa:electron smoke` | Seeded evidence through native IPC, renderer behavior, source references, and persistence across restart |
 | `pnpm qa:electron smoke --living-spaces` | Local Space creation, native CLI/MCP reads and writes, document editing, revision protection, source links, and restart persistence |
-| `pnpm qa:electron learning` | Learning from isolated synthetic agent records, source attribution, local knowledge proposals, and durable history using deterministic inference |
+| `pnpm qa:electron learning` | Learning from isolated synthetic agent records, proposal dismissal, replay rejection in Auto mode, explicit user corrections, source attribution, and restart persistence using deterministic inference |
+| `pnpm qa:electron smoke --ambient-tasks` | Synthetic screen capture through the ordinary Day task writer, source navigation, Not needed, next-day restart, replay suppression, and a fresh commitment |
 | `pnpm qa:audio` | Actual native audio inputs with a bounded playback stimulus, recorded samples, and persistence |
 
 The default `pnpm qa:electron` command selects `smoke`. For CLI archive and task continuity changes, use `pnpm qa:electron smoke --continuity`. For a packaged-renderer boundary, add `--packaged-renderer` to a supported scenario; this builds the static renderer in the isolated source snapshot.
+
+The task replay scenario passes a parsed fixture plan to the production Day writer without an ambient or proactive batch. It exercises native source handling, UI and persistence, rather than a full Day refresh or live model quality. Its next-day clock is changed only in the runner's isolated source snapshot.
 
 Audio QA activates real capture and plays a quiet test tone. Use it when that physical input/output check is intended. Fixture-only checks do not prove microphone or system-audio capture, speaker behavior, or real transcription quality.
 

@@ -430,6 +430,90 @@ describe('wiki page history', () => {
     assert.equal(listWikiProposals().length, 2)
   })
 
+  it('keeps dismissed suggestions out of automatic learning and copied-source proposals after restart', async (t) => {
+    let now = 1_000
+    t.mock.method(Date, 'now', () => now)
+    const directory = await historyDirectory()
+    const evidence = {
+      sourceId: 'original-user-message',
+      observedAt: 100,
+      quote: 'Use npm for every project in this workspace.',
+      role: 'user' as const,
+    }
+    const input = {
+      dayId: 'day-1',
+      dayStartedAt: 1,
+      spaceId: 'personal',
+      slug: 'processes/preferences',
+      title: 'Preferences',
+      content: 'Use npm for every project.',
+      summary: 'Package-manager preference.',
+      baseRevision: null,
+      sourceId: 'agent-learning://batch-1',
+      createdAt: 1,
+      evidence: [evidence],
+    }
+    const first = createWikiProposal(input)
+    setWikiProposalStatus(first.id, 'dismissed')
+    closeWikiHistoryStore()
+    initializeWikiHistoryStore(directory)
+
+    const copiedEvidence = { ...evidence, sourceId: 'copied-assistant-message', role: 'assistant' as const }
+    const replay = {
+      ...input,
+      content: 'All projects use npm.',
+      evidence: [copiedEvidence],
+    }
+    assert.equal(isWikiEvidenceRejected(input.spaceId, input.slug, replay), true)
+    assert.equal(createWikiProposal(replay).id, first.id)
+    assert.equal(
+      createWikiProposal({
+        ...replay,
+        evidence: [{ ...copiedEvidence, observedAt: 1_500 }],
+      }).id,
+      first.id
+    )
+    assert.equal(
+      createWikiProposal({ ...replay, evidence: [{ ...evidence, sourceId: 'older-user-copy' }] }).id,
+      first.id
+    )
+    assert.equal(
+      isWikiEvidenceRejected(input.spaceId, input.slug, {
+        ...input,
+        evidence: [{ ...evidence, observedAt: 1_500 }],
+      }),
+      true,
+      'a new observation time cannot make the original rejected event fresh'
+    )
+    assert.equal(
+      isWikiEvidenceRejected(input.spaceId, input.slug, {
+        ...input,
+        evidence: [{ ...evidence, sourceId: 'before-dismissal-user-copy', observedAt: 900 }],
+      }),
+      true,
+      'dismissal time, rather than proposal creation time, controls fresh evidence'
+    )
+    assert.equal(isWikiEvidenceRejected('another-space', input.slug, replay), false)
+    assert.equal(isWikiEvidenceRejected(input.spaceId, 'processes/unrelated', replay), false)
+    assert.equal(wikiProposalFeedback([{ spaceId: input.spaceId, slug: input.slug }]).length, 1)
+
+    now = 2_000
+    setWikiProposalStatus(first.id, 'dismissed')
+    const correction = {
+      ...input,
+      evidence: [{ ...evidence, sourceId: 'later-user-reaffirmation', observedAt: 1_500 }],
+    }
+    assert.equal(isWikiEvidenceRejected(input.spaceId, input.slug, correction), false)
+    assert.notEqual(createWikiProposal(correction).id, first.id)
+    const distinctFinding = {
+      ...input,
+      content: 'Preserve private drafts locally.',
+      evidence: [{ ...evidence, quote: 'Private drafts must remain on the local machine.' }],
+    }
+    assert.equal(isWikiEvidenceRejected(input.spaceId, input.slug, distinctFinding), false)
+    assert.notEqual(createWikiProposal(distinctFinding).id, first.id)
+  })
+
   it('preserves local provenance through restart and permits a different finding from the same source message', async () => {
     const directory = await historyDirectory()
     const evidence = {
