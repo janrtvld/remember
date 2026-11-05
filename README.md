@@ -22,7 +22,7 @@
   <img src="https://img.shields.io/badge/Apple_Silicon-M1_or_newer-lightgrey" alt="Apple Silicon" />
 </p>
 
-![Remember product preview: My Day overview, attention, and local Spaces](docs/images/remember-preview.jpg)
+![Remember product preview: My Day overview, attention, and local Spaces](docs/images/remember-preview.png)
 
 <p align="center"><sub>Product preview with sample data. <a href="https://www.remember.computer/#product-preview">Try the interactive demo →</a></sub></p>
 
