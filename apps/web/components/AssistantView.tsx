@@ -576,10 +576,21 @@ const AssistantChat = memo(function AssistantChat({
     const viewport = scroll.current
     const messages = content.current
     if (!viewport || !messages) return
-    const observer = new ResizeObserver(followConversation)
+    let frame: number | null = null
+    // The answer spacer resizes messages too; write its height outside observer delivery.
+    const observer = new ResizeObserver(() => {
+      if (frame !== null) return
+      frame = window.requestAnimationFrame(() => {
+        frame = null
+        followConversation()
+      })
+    })
     observer.observe(messages)
     observer.observe(viewport)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      if (frame !== null) window.cancelAnimationFrame(frame)
+    }
   }, [followConversation])
 
   const run = useCallback(
