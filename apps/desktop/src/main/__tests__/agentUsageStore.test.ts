@@ -7,7 +7,7 @@ import {
   appendAgentUsageAt,
   claudeUsageTokens,
   codexUsageTokens,
-  readAgentUsageAt,
+  createAgentUsageReader,
   summarizeAgentUsage,
 } from '../agentUsageStore'
 import { parseCodexAccountUsage } from '../codexAccountUsage'
@@ -31,11 +31,12 @@ test('provider token accounting includes Claude caches without double-counting C
   assert.equal(claudeUsageTokens({ inputTokens: Number.NaN, outputTokens: 0 }), null)
 })
 
-test('receipts survive a new read, deduplicate receipt IDs, and tolerate a partial append', () => {
+test('receipts survive a new reader, deduplicate receipt IDs, and tolerate a partial append', () => {
   const directory = mkdtempSync(join(tmpdir(), 'remember-usage-'))
   try {
     const file = join(directory, 'usage.ndjson')
-    assert.deepEqual(readAgentUsageAt(file), [])
+    const read = createAgentUsageReader(file)
+    assert.deepEqual(read(), [])
     const receipt = {
       id: 'turn:model',
       provider: 'claude' as const,
@@ -47,8 +48,17 @@ test('receipts survive a new read, deduplicate receipt IDs, and tolerate a parti
     }
     appendAgentUsageAt(file, receipt)
     appendAgentUsageAt(file, receipt)
-    appendFileSync(file, '{"id":')
-    assert.deepEqual(readAgentUsageAt(file), [receipt])
+    const later = { ...receipt, id: 'later:model', recordedAt: 200 }
+    const laterLine = JSON.stringify(later)
+    appendFileSync(file, laterLine.slice(0, 6))
+    assert.deepEqual(read(), [receipt])
+    appendFileSync(file, `${laterLine.slice(6)}\n`)
+    assert.deepEqual(read(), [receipt, later])
+    assert.deepEqual(createAgentUsageReader(file)(), [receipt, later])
+    rmSync(file)
+    assert.deepEqual(read(), [])
+    appendAgentUsageAt(file, later)
+    assert.deepEqual(read(), [later])
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

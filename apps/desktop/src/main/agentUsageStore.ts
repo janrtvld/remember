@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { appendFileSync, closeSync, fstatSync, mkdirSync, openSync, readSync } from 'node:fs'
 import { dirname } from 'node:path'
 import type { AgentProvider, AgentUsageSummary, AgentUsageTotals } from '@remember/shared'
 
@@ -45,16 +45,8 @@ export function appendAgentUsageAt(path: string, receipt: AgentUsageReceipt) {
   appendFileSync(path, `${JSON.stringify(receipt)}\n`, { encoding: 'utf8', mode: 0o600 })
 }
 
-export function readAgentUsageAt(path: string): AgentUsageReceipt[] {
-  let contents: string
-  try {
-    contents = readFileSync(path, 'utf8')
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
-    throw error
-  }
-  const receipts = new Map<string, AgentUsageReceipt>()
-  for (const line of contents.split('\n')) {
+function mergeUsageLines(receipts: Map<string, AgentUsageReceipt>, lines: string[]) {
+  for (const line of lines) {
     if (!line.trim()) continue
     try {
       const receipt = JSON.parse(line) as AgentUsageReceipt
@@ -72,7 +64,45 @@ export function readAgentUsageAt(path: string): AgentUsageReceipt[] {
       // A process may still be appending the final line.
     }
   }
-  return [...receipts.values()]
+}
+
+/**
+ * Reads usage for display. The summary is requested whenever the Agent page opens and on a timer, and the file only
+ * grows, so each call parses just the receipts appended since the previous one.
+ */
+export function createAgentUsageReader(path: string) {
+  let inode: number | null = null
+  let offset = 0
+  let receipts = new Map<string, AgentUsageReceipt>()
+  return (): AgentUsageReceipt[] => {
+    let file: number
+    try {
+      file = openSync(path, 'r')
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      inode = null
+      return []
+    }
+    try {
+      const { ino, size } = fstatSync(file)
+      if (ino !== inode || size < offset) {
+        inode = ino
+        offset = 0
+        receipts = new Map()
+      }
+      if (size > offset) {
+        const appended = Buffer.allocUnsafe(size - offset)
+        const length = readSync(file, appended, 0, appended.length, offset)
+        // Leave a line that is still being written for the next call.
+        const complete = appended.lastIndexOf(0x0a, length - 1) + 1
+        mergeUsageLines(receipts, appended.toString('utf8', 0, complete).split('\n'))
+        offset += complete
+      }
+    } finally {
+      closeSync(file)
+    }
+    return [...receipts.values()]
+  }
 }
 
 function totals(receipts: AgentUsageReceipt[]): AgentUsageTotals {

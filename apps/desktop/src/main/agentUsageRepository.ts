@@ -6,7 +6,7 @@ import {
   appendAgentUsageAt,
   claudeUsageTokens,
   codexUsageTokens,
-  readAgentUsageAt,
+  createAgentUsageReader,
   summarizeAgentUsage,
 } from './agentUsageStore'
 
@@ -14,8 +14,11 @@ function usagePath() {
   return join(app.getPath('userData'), 'daily-review', 'agent-usage.ndjson')
 }
 
+let readUsage: ReturnType<typeof createAgentUsageReader> | null = null
+
 export function getAgentUsage() {
-  return summarizeAgentUsage(readAgentUsageAt(usagePath()))
+  readUsage ??= createAgentUsageReader(usagePath())
+  return summarizeAgentUsage(readUsage())
 }
 
 export function recordCodexUsage(model: string, usage: unknown) {

@@ -1,15 +1,7 @@
-import {
-  appendFileSync,
-  closeSync,
-  fstatSync,
-  mkdirSync,
-  openSync,
-  readFileSync,
-  readSync,
-  renameSync,
-  writeFileSync,
-} from 'node:fs'
+import { appendFileSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { type FileHandle, open } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import { setImmediate } from 'node:timers/promises'
 import type { AgentTraceAction, AgentTraceDiagnostic, AgentTraceEvent } from '@remember/shared'
 
 const MAX_TRACE_EVENTS = 200
@@ -200,44 +192,65 @@ export function readAgentTraceAt(path: string, limit = MAX_TRACE_EVENTS) {
   return latestTraceEvents(latestById, limit)
 }
 
+// A slice this size parses in about ten milliseconds, so reading a long trace never holds the main process for long.
+const READ_SLICE_BYTES = 4 * 1024 * 1024
+
 /**
  * Lists recent activity for display. The list is polled, so each call reads
  * only what was appended since the previous one, and it omits diagnostics:
- * raw prompts and output stay in the file for explicit debugging.
+ * raw prompts and output stay in the file for explicit debugging. Lines can be
+ * hundreds of kilobytes, so the file is read in slices with a pause between
+ * them, and overlapping calls share one read.
  */
 export function createAgentTraceReader(path: string, limit = MAX_TRACE_EVENTS) {
   let inode: number | null = null
   let offset = 0
   let latestById = new Map<string, AgentTraceEvent>()
-  return () => {
-    let file: number
+  let reading: Promise<AgentTraceEvent[]> | null = null
+
+  async function read() {
+    let file: FileHandle
     try {
-      file = openSync(path, 'r')
+      file = await open(path, 'r')
     } catch {
       return []
     }
     try {
-      const { ino, size } = fstatSync(file)
+      const { ino, size } = await file.stat()
       if (ino !== inode || size < offset) {
         inode = ino
         offset = 0
         latestById = new Map()
       }
-      if (size > offset) {
-        const appended = Buffer.allocUnsafe(size - offset)
-        const length = readSync(file, appended, 0, appended.length, offset)
-        // Leave a line that is still being written for the next call.
-        const complete = appended.lastIndexOf(0x0a, length - 1) + 1
-        mergeTraceLines(latestById, appended.toString('utf8', 0, complete).split('\n'), false)
+      // Bytes after the last complete line: the start of a line that spans slices or is still being written.
+      let unfinished: Buffer = Buffer.alloc(0)
+      while (offset + unfinished.length < size) {
+        const slice = Buffer.allocUnsafe(Math.min(READ_SLICE_BYTES, size - offset - unfinished.length))
+        const { bytesRead } = await file.read(slice, 0, slice.length, offset + unfinished.length)
+        if (bytesRead === 0) break
+        const data = unfinished.length
+          ? Buffer.concat([unfinished, slice.subarray(0, bytesRead)])
+          : slice.subarray(0, bytesRead)
+        const complete = data.lastIndexOf(0x0a) + 1
+        mergeTraceLines(latestById, data.toString('utf8', 0, complete).split('\n'), false)
         offset += complete
+        unfinished = data.subarray(complete)
         if (latestById.size > limit) {
           latestById = new Map(latestTraceEvents(latestById, limit).map((event) => [event.id, event]))
         }
+        await setImmediate()
       }
     } finally {
-      closeSync(file)
+      await file.close()
     }
     return latestTraceEvents(latestById, limit)
+  }
+
+  return () => {
+    reading ??= read().finally(() => {
+      reading = null
+    })
+    return reading
   }
 }
 
