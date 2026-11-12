@@ -1113,6 +1113,7 @@ export type AgentTraceAction =
   | 'cli-search'
   | 'cli-conversations'
   | 'cli-usage'
+  | 'cli-brief'
   | 'cli-wiki-spaces'
   | 'cli-wiki-list'
   | 'cli-wiki-search'

@@ -61,6 +61,7 @@ const cliActionLabels: Record<Exclude<AgentTraceAction, 'day-refresh'>, string> 
   'cli-search': 'Werkgeschiedenis doorzocht',
   'cli-conversations': 'Gesprekken gelezen',
   'cli-usage': 'Appgebruik gecontroleerd',
+  'cli-brief': 'Profiel en werkpatronen gelezen',
   'cli-wiki-spaces': 'Wiki-spaces opgehaald',
   'cli-wiki-list': 'Wikipagina’s opgehaald',
   'cli-wiki-search': 'Wiki doorzocht',

@@ -1,4 +1,5 @@
 import type { DailyReviewWikiPage, KnowledgeSuggestion, WikiPageForAnalysis, WikiPageUpdate } from '@remember/shared'
+import { agentContextTerms, isPrivateSelfProfilePage } from '../agentContextService'
 import { reconcileWikiPageUpdates } from './wikiReconcile'
 
 export type AnalysisWikiPage = DailyReviewWikiPage &
@@ -19,18 +20,42 @@ function hasEditsSinceRemember(page: AnalysisWikiPage) {
  * complete current page (and the complete previous Remember revision when a
  * person edited it), or mark that page read-only for this run.
  */
+export interface WikiPromptOrder {
+  preserveOrder?: boolean
+  /** Text describing the current work. Pages whose title or slug it names get whole-page room first. */
+  relevantTo?: string
+}
+
+function isSelfProfile(page: AnalysisWikiPage) {
+  return (page.spaceId ?? 'personal') === 'personal' && isPrivateSelfProfilePage(page)
+}
+
 export function wikiPagesForPrompt(
   pages: AnalysisWikiPage[],
   pageLimit: number,
   characterBudget: number,
-  options: { preserveOrder?: boolean } = {}
+  options: WikiPromptOrder = {}
 ) {
   let remaining = characterBudget
   const candidates = pages.filter((page) => page.slug !== 'index' && page.slug !== 'log')
   if (!options.preserveOrder) {
+    const named = new Set(options.relevantTo ? agentContextTerms(options.relevantTo) : [])
+    const relevance = new Map(
+      candidates.map((page) => [
+        page,
+        named.size
+          ? agentContextTerms(`${page.title} ${page.slug.replaceAll('/', ' ')}`).filter(
+              (term) => named.has(term) && !['people', 'projects', 'concepts', 'decisions', 'research'].includes(term)
+            ).length
+          : 0,
+      ])
+    )
+    // The person's own profile frames every other page, so it never competes for room.
     candidates.sort(
       (first, second) =>
+        Number(isSelfProfile(second)) - Number(isSelfProfile(first)) ||
         Number(hasEditsSinceRemember(second)) - Number(hasEditsSinceRemember(first)) ||
+        (relevance.get(second) ?? 0) - (relevance.get(first) ?? 0) ||
         second.updatedAt - first.updatedAt
     )
   }
@@ -72,17 +97,18 @@ export function wikiPagesForPrompt(
           spaceName,
           maintenanceMode,
           pendingProposal: rewriteAllowed ? pendingProposal : undefined,
-          editContext: editContext
-            ? {
-                ...editContext,
-                lastRememberRevision: lastRememberRevision
-                  ? {
-                      ...lastRememberRevision,
-                      content: rewriteAllowed ? lastRememberRevision.content : null,
-                    }
-                  : null,
-              }
-            : null,
+          editContext:
+            editContext && rewriteAllowed
+              ? {
+                  ...editContext,
+                  lastRememberRevision: lastRememberRevision
+                    ? {
+                        ...lastRememberRevision,
+                        content: rewriteAllowed ? lastRememberRevision.content : null,
+                      }
+                    : null,
+                }
+              : null,
         }
       }
     )
@@ -106,7 +132,12 @@ export function filterWikiUpdatesToSafePromptPages(
   updates: WikiPageUpdate[],
   pages: AnalysisWikiPage[],
   pageLimit: number,
-  characterBudget: number
+  characterBudget: number,
+  order: WikiPromptOrder = {}
 ) {
-  return filterWikiUpdatesToSafePromptSelection(updates, pages, wikiPagesForPrompt(pages, pageLimit, characterBudget))
+  return filterWikiUpdatesToSafePromptSelection(
+    updates,
+    pages,
+    wikiPagesForPrompt(pages, pageLimit, characterBudget, order)
+  )
 }

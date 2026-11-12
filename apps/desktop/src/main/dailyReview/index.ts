@@ -81,6 +81,7 @@ import {
   subscribeSettingsChanges,
   updateSettings,
 } from '../settings'
+import { readUserBrief } from '../userBrief'
 import {
   downloadModel,
   downloadProgress,
@@ -759,8 +760,11 @@ function startProactiveContextWorker() {
       const candidates = getProactiveBriefingCandidateSourceIds(selected).filter((id) =>
         selected.some((source) => source.evidenceId === id && source.kind !== 'note' && source.kind !== 'day')
       )
+      const userContext = await readUserBrief(store)
+      signal.throwIfAborted()
       return analyzeProactiveContext({
         model,
+        userContext,
         agentComputer: 'local',
         evidence: selected,
         items: selected.every((source) => source.kind === 'note' || source.kind === 'day') ? [] : items,

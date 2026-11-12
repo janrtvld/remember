@@ -90,7 +90,7 @@ test('standing profile retrieval is fresh, private, bounded, and revalidates ear
     profile.sources.map(({ spaceId, slug }) => [spaceId, slug]),
     [['personal', 'people/me']]
   )
-  assert.ok(profile.sources[0].content.length < 3100)
+  assert.ok(profile.sources[0].content.length < 8100)
   assert.equal(profile.sources[0].revision, 'r1')
   assert.equal(profile.sources[0].freshness, 'fresh')
   permitted = false

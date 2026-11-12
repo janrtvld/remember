@@ -151,9 +151,14 @@ export function rankAgentContextPages(pages: WikiPage[], queryTerms: string[]) {
     )
 }
 
-export function compactAgentContextPage(page: WikiPage, queryTerms: string[], baseline: boolean) {
+export function compactAgentContextPage(
+  page: WikiPage,
+  queryTerms: string[],
+  baseline: boolean,
+  limit = MAX_PAGE_CHARACTERS
+) {
   const body = page.content.replace(/<!--[\s\S]*?-->/g, '').trim()
-  if (body.length <= MAX_PAGE_CHARACTERS) return body
+  if (body.length <= limit) return body
   const paragraphs = body.split(/\n\s*\n/)
   const indexed = paragraphs.map((text, index) => ({
     text,
@@ -165,7 +170,7 @@ export function compactAgentContextPage(page: WikiPage, queryTerms: string[], ba
   for (const paragraph of indexed.sort((a, b) =>
     baseline && a.index === 0 ? -1 : baseline && b.index === 0 ? 1 : b.score - a.score || a.index - b.index
   )) {
-    if (length + paragraph.text.length + 2 > MAX_PAGE_CHARACTERS) continue
+    if (length + paragraph.text.length + 2 > limit) continue
     selected.push(paragraph)
     length += paragraph.text.length + 2
   }
@@ -173,7 +178,7 @@ export function compactAgentContextPage(page: WikiPage, queryTerms: string[], ba
     .sort((a, b) => a.index - b.index)
     .map(({ text }) => text)
     .join('\n\n')
-  return `${content || body.slice(0, MAX_PAGE_CHARACTERS - 100)}\n\n[Excerpt. Read the Wiki page for full context.]`
+  return `${content || body.slice(0, limit - 100)}\n\n[Excerpt. Read the Wiki page for full context.]`
 }
 
 const compactPage = compactAgentContextPage

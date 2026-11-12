@@ -93,6 +93,23 @@ describe('Wiki prompt safety', () => {
     assert.equal(wikiPagesForPrompt([untouched, edited], 1, 10_000, { preserveOrder: true })[0]?.slug, untouched.slug)
   })
 
+  it('gives the self profile and pages named by the current work whole-page room first', () => {
+    const profile = page('people/me', 'Role and working style.', { updatedAt: 1 })
+    const named = page('projects/harbor', 'Harbor state.', { updatedAt: 2 })
+    const recent = page('projects/atlas', 'Atlas state.', { updatedAt: 9 })
+    const selected = wikiPagesForPrompt([recent, named, profile], Number.POSITIVE_INFINITY, 1_200, {
+      relevantTo: 'Reviewed the Harbor rollout plan',
+    })
+    assert.deepEqual(
+      selected.map((entry) => [entry.slug, entry.rewriteAllowed]),
+      [
+        ['people/me', true],
+        ['projects/harbor', true],
+        ['projects/atlas', false],
+      ]
+    )
+  })
+
   it('hard-blocks updates when a complete existing page did not fit the prompt', () => {
     const oversized = page('projects/oversized', 'x'.repeat(20_000), { updatedAt: 2 })
     const omitted = page('projects/omitted', 'Small but beyond the page limit.', { updatedAt: 1 })

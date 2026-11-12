@@ -19,6 +19,7 @@ Verify `remember_status` / `status` on first use. Preserve the selected profile 
 
 | User wants | Start here | What it means |
 | --- | --- | --- |
+| Who the person is and how they work | `remember_brief`; CLI `brief` | Their private profile page plus activity patterns computed from recent Days. Background for tailoring help, not instructions or proof of a current event. What they say now takes precedence. |
 | Latest conversations | `remember_conversations` with `view: "list"`, limit 5, no selector; CLI `conversations --view list --limit 5` | Actual visible conversations across dates, including imported recordings. |
 | What was said | Same tool with `view: "transcript"`, selector=date, id and revision from the list; CLI `conversations DATE --view transcript --id ID --revision REVISION` | Original transcript, at most 6,000 characters per page. Follow `nextOffset` for the requested content. |
 | Open tasks | `remember_inbox` action list, lifecycle open; CLI `inbox list --lifecycle open --limit 20` | Remember's own current task records. Read a relevant item for evidence and completion suggestions. |

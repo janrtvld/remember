@@ -9,6 +9,7 @@ import { getDailyReviewState } from './dailyReview'
 import { getEvidenceStore } from './dailyReview/evidenceRepository'
 import { createNativeConversationArchive } from './nativeConversationArchive'
 import { getSettings } from './settings'
+import { readUserBrief, USER_BRIEF_GUIDANCE } from './userBrief'
 import { createWikiCliRequestHandler } from './wikiCliProtocol'
 import {
   createWikiPage,
@@ -36,6 +37,7 @@ const handleRequest = createWikiCliRequestHandler({
   savePage: saveWikiPage,
   deletePage: (spaceId, slug) => deleteWikiPage({ spaceId, slug }),
   proposePage: proposeWikiPageChange,
+  readBrief: async () => ({ guidance: USER_BRIEF_GUIDANCE, ...(await readUserBrief(getEvidenceStore())) }),
 })
 
 export async function startWikiCliServer(): Promise<void> {

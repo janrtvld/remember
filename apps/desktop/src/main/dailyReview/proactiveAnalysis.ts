@@ -31,6 +31,7 @@ export async function analyzeProactiveContext(
     conversation: input.conversation,
     followUpMemory: input.followUpMemory,
     userName: input.userName,
+    userContext: input.userContext ?? null,
     agentComputer: input.agentComputer ?? null,
     ...(input.briefingCandidateSourceIds === undefined
       ? {}

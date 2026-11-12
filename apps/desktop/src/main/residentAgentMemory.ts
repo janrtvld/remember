@@ -9,6 +9,8 @@ import {
 } from './agentContextService'
 
 const MAX_MEMORY_CHARACTERS = 10_000
+/** The self profile is standing context for every reader, so it gets room for working-style detail. */
+const MAX_PROFILE_CHARACTERS = 8_000
 
 export type ResidentMemorySource = {
   spaceId: string
@@ -158,7 +160,11 @@ export async function readResidentMemory(
       title: redactSensitiveCaptureText(page.title),
       revision: residentMemoryRevision(page),
       url: `/wiki/page/?space=${encodeURIComponent(snapshot.space.id)}&slug=${encodeURIComponent(page.slug)}`,
-      content: redactSensitiveCaptureText(compactAgentContextPage(page, terms, isPrivateSelfProfilePage(page))),
+      content: redactSensitiveCaptureText(
+        isPrivateSelfProfilePage(page)
+          ? compactAgentContextPage(page, terms, true, MAX_PROFILE_CHARACTERS)
+          : compactAgentContextPage(page, terms, false)
+      ),
       checkedAt: snapshot.checkedAt,
       updatedAt: page.updatedAt,
       freshness: snapshot.state,

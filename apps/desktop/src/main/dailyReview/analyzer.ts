@@ -92,6 +92,7 @@ import {
   FINAL_SYSTEM_PROMPT,
   FINAL_WIKI_CHARACTER_BUDGET,
   FINAL_WIKI_PAGE_LIMIT,
+  finalWikiRelevance,
   formatTimestamp,
 } from './dayAnalysisPrompts'
 import { dayAnalysisProvenancePermitted, prepareDayAnalysisInputs } from './dayAnalysisProvenance'
@@ -105,6 +106,7 @@ import {
 import { getEvidenceStore } from './evidenceRepository'
 import { INBOX_TASK_POLICY } from './inboxTaskPolicy'
 import { timelineEvidenceReferences } from './timelineItems'
+import { readUserActivity } from './userActivityReader'
 import {
   type AnalysisWikiPage,
   filterWikiUpdatesToSafePromptPages,
@@ -1573,7 +1575,8 @@ export async function generateDayMemory(
         personalWikiPages,
         [],
         workItemsForPrompt(admitted.tasks),
-        userName
+        userName,
+        readUserActivity(store)
       ),
       schema: FINAL_ANALYSIS_SCHEMA,
       systemPrompt: FINAL_SYSTEM_PROMPT,
@@ -1593,7 +1596,8 @@ export async function generateDayMemory(
       canonicalWikiSuggestions,
       personalWikiPages,
       FINAL_WIKI_PAGE_LIMIT,
-      FINAL_WIKI_CHARACTER_BUDGET
+      FINAL_WIKI_CHARACTER_BUDGET,
+      { relevantTo: finalWikiRelevance(analyses) }
     ),
     conversations: episodeAnalysis.summaries.map((summary) =>
       conversationSummaryFromAnalysis(session.startedAt, summary)

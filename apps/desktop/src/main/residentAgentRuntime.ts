@@ -3,7 +3,7 @@ import path from 'node:path'
 import { type AgentTurnStep, CHANNELS } from '@remember/shared'
 import { app, BrowserWindow, type IpcMainInvokeEvent, ipcMain } from 'electron'
 import type { createAgentInteractions } from './agentInteractions'
-import { getAgentLearningPolicyToken, readAgentLearningEvent } from './agentLearning'
+import { getAgentLearningPolicyToken } from './agentLearning'
 import { cancelAgentTurn, runAgentTurn } from './agentTurn'
 import { getAssistantAttention, publishAssistantAttention, subscribeAssistantAttention } from './assistantAttention'
 import { createNativeBriefing } from './briefingNative'
@@ -11,6 +11,7 @@ import { currentProactivePolicyToken } from './dailyReview'
 import { createDayAnalysisValidationScope, dayAnalysisProvenancePermitted } from './dailyReview/dayAnalysisProvenance'
 import { dailyReviewDirectory, getEvidenceStore } from './dailyReview/evidenceRepository'
 import type { ProactiveDecision } from './dailyReview/proactiveStore'
+import { readUserActivity } from './dailyReview/userActivityReader'
 import { getDictationHistorySnapshot, subscribeDictationHistoryChanges } from './dictation/historySource'
 import { createNativeHostTasks } from './hostTaskNative'
 import { createNativeConversationArchive } from './nativeConversationArchive'
@@ -32,10 +33,9 @@ import { residentProgressLabel } from './residentProgress'
 import { type BriefingReplyReference, isInitiativeReplyReference } from './residentReplyContext'
 import { createResidentTaskTool } from './residentTaskTool'
 import { createResidentTurnTools } from './residentTurnTools'
-import { residentWikiPagePermitted } from './residentWikiPrivacy'
 import { getInterfaceLocale, getSettings, subscribeSettingsChanges } from './settings'
+import { createWikiPagePermission } from './userBrief'
 import { subscribeWikiContentChanges, subscribeWikiContextInvalidation } from './wikiContextEvents'
-import { resolveWikiEvidenceSource } from './wikiEvidenceSource'
 import {
   createWikiPage,
   deleteWikiPage,
@@ -96,21 +96,7 @@ export function registerResidentAgent(
       })
     : null
   const spaces = () => getWikiOverview([]).spaces
-  const pagePermitted = (spaceId: string, page: Pick<import('@remember/shared').WikiPage, 'slug'>) => {
-    try {
-      return residentWikiPagePermitted(
-        getWikiPageHistoryForSpace({ spaceId, slug: page.slug }),
-        (source) =>
-          resolveWikiEvidenceSource(source, {
-            agentEvent: readAgentLearningEvent,
-            captured: (id) => evidenceStore.ambientTasks.resolveSource(id),
-          }),
-        getSettings()
-      )
-    } catch {
-      return false
-    }
-  }
+  const pagePermitted = createWikiPagePermission(evidenceStore)
   const withSourceValidation = createDayAnalysisValidationScope(evidenceStore)
   const currentInitiativeSources = (decision: ProactiveDecision) =>
     withSourceValidation((scope) => {
@@ -202,6 +188,7 @@ export function registerResidentAgent(
             },
             chatStore.memorySources()
           )
+      const activity = hostDriver ? null : readUserActivity(evidenceStore)
       if (policy() !== capturedPolicy) throw new Error('assistant-context-changed')
       return {
         text: JSON.stringify({
@@ -210,6 +197,7 @@ export function registerResidentAgent(
           execution: agentExecution(),
           sources: RESIDENT_ARCHIVE_GUIDE,
           ...(memory ? { profile: memory.sources } : {}),
+          ...(activity ? { activity } : {}),
           ...(briefingContext ? { briefings: briefingContext.briefings } : {}),
         }),
         ...(memory ? { memory } : {}),

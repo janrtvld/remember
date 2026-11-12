@@ -99,6 +99,19 @@ function fixture() {
 }
 
 describe('Wiki CLI protocol', () => {
+  it('serves the brief only where the host provides it', async () => {
+    const { dependencies, handle } = fixture()
+
+    const scoped = await handle({ id: '1', action: 'brief.read' })
+    const local = await createWikiCliRequestHandler({
+      ...dependencies,
+      readBrief: async () => ({ profile: null, activity: null }),
+    })({ id: '2', action: 'brief.read' })
+
+    assert.equal(scoped.ok, false)
+    assert.deepEqual(local, { id: '2', ok: true, result: { profile: null, activity: null } })
+  })
+
   it('lists spaces without exposing Wiki page contents', async () => {
     const { handle } = fixture()
 

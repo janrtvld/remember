@@ -2952,6 +2952,24 @@ export class EvidenceStore {
     })
   }
 
+  /** Recent Days with only what cross-Day activity patterns need; raw captures stay unread. */
+  readActivityDays(since: number) {
+    const rows = this.database
+      .prepare('SELECT * FROM workday WHERE started_at >= ? ORDER BY started_at DESC')
+      .all(since) as DatabaseRow[]
+    return rows.map((row) => {
+      const id = stringValue(row.id)
+      return {
+        id,
+        localDay: stringValue(row.local_day),
+        startedAt: numberValue(row.started_at),
+        activeDurationMs: numberValue(row.active_duration_ms),
+        appActivity: this.readAppActivity(id),
+        memory: this.readMemory(row),
+      }
+    })
+  }
+
   readTaskContextEvidence(workdayId: string, observedAt: number) {
     this.taskContextStatement ??= this.database.prepare(
       `SELECT c.window_title, c.url, a.display_name, a.bundle_id

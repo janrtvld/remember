@@ -8,6 +8,7 @@ export type WikiCliRequest =
   | ({ id: string; action: 'agent.context' } & AgentContextRequest)
   | { id: string; action: 'agent.context.ack'; packetId: string }
   | { id: string; action: 'wiki.spaces' }
+  | { id: string; action: 'brief.read' }
   | {
       id: string
       action: 'wiki.ensure' | 'wiki.find-source'
@@ -55,6 +56,8 @@ export interface WikiCliDependencies {
   savePage: (input: SaveWikiPageInput) => Promise<WikiPage[]>
   deletePage: (spaceId: string, slug: string) => Promise<WikiPage[]>
   proposePage: (request: Extract<WikiCliRequest, { action: 'wiki.write' }>) => Promise<unknown>
+  /** Only the local agent socket serves the person's brief; scoped memory tools leave this out. */
+  readBrief?: () => Promise<unknown>
 }
 
 function requiredString(value: unknown, error: string) {
@@ -90,7 +93,7 @@ export function parseWikiCliRequest(value: unknown): WikiCliRequest {
       prompt: typeof input.prompt === 'string' ? input.prompt.slice(0, 16_000) : '',
     }
   }
-  if (action === 'wiki.spaces') return { id, action }
+  if (action === 'wiki.spaces' || action === 'brief.read') return { id, action }
   const spaceId = requiredString(input.spaceId, 'wiki-space-required')
   if (action === 'wiki.changes') return { id, action, spaceId, cursor: optionalString(input.cursor, 'invalid-cursor') }
   if (action === 'wiki.ensure' || action === 'wiki.find-source') {
@@ -235,6 +238,10 @@ export function createWikiCliRequestHandler(dependencies: WikiCliDependencies) {
       }
       if (request.action === 'wiki.spaces') {
         return { id, ok: true, result: await dependencies.getSpaces() }
+      }
+      if (request.action === 'brief.read') {
+        if (!dependencies.readBrief) throw new Error('brief-unavailable')
+        return { id, ok: true, result: await dependencies.readBrief() }
       }
       const space = await assertSpace(dependencies, request.spaceId)
       if (request.action === 'wiki.find-source' || request.action === 'wiki.ensure') {

@@ -172,6 +172,23 @@ test('prepare can only become an offer and never returns a grant or execution au
   assert.equal('preparation' in result.initiative, false)
 })
 
+test('user context reaches the model as background and stays out of citable sources', () => {
+  const projection = projectProactiveContext(
+    input({
+      userContext: {
+        profile: { title: 'Me', content: 'Leads the Harbor launch. Prefers short Dutch replies.', updatedAt: now },
+        activity: null,
+      },
+    })
+  )
+  assert.equal(projection.userContext?.profile?.content, 'Leads the Harbor launch. Prefers short Dutch replies.')
+  assert.equal(
+    projection.evidence.some((entry) => entry.text.includes('Harbor launch')),
+    false
+  )
+  assert.equal(projectProactiveContext(input()).userContext, null)
+})
+
 test('computer capability context does not grant preparation or execution', () => {
   const context = input({ agentComputer: 'remote' })
   assert.deepEqual(projectProactiveContext(context).capabilities, { agentComputer: 'remote' })

@@ -23,6 +23,17 @@ Generation and review share one ownership policy in `knowledgeOrganization.ts`. 
 
 Normal agent/Day/Timeline learning now considers self and collaborators explicitly. A bounded private self profile is supplied to Remember's local chat with a revision and source URL. Current source availability, exclusions and page revisions are checked again before relying on it. The change does not enable retired automatic external-agent hooks.
 
+## User brief
+
+Every reader that tailors its work to the person starts from the same brief, assembled in `userBrief.ts`:
+
+- **Profile**: the private self profile page. It holds identity, responsibilities and stated preferences, plus a Working style section with attributed, dated observations of how the person works and communicates. The Day review maintains it through the normal reviewed Wiki flow, and a material profile change takes priority among a Day's knowledge suggestions.
+- **Activity**: usual hours, projects, apps and recently abandoned Tasks over the last 21 days, computed by code in `userActivity.ts` from at least three recorded Days. It is never written to the Wiki, so it is always current and cannot outlive deleted data.
+
+Readers: Remember's chat (context `profile` and `activity`), proactive review (`userContext`), the Day review (profile pinned first in `wiki_pages`, activity in `user_activity`) and external agents through `remember_brief` / `remember brief`. The brief is background for relevance and tone. It is never a citable source and never establishes a commitment, ownership or a current event.
+
+The Day review lists every Wiki page so no subject is duplicated. Whole-page bodies are given room in this order: the self profile, pages a person edited since Remember's last rewrite, pages whose title or slug today's analysis names, then most recently updated.
+
 Dismissing a pending knowledge proposal now records the same durable, page- and Space-scoped rejection used by undo. Replaying its content or quoted evidence under another source ID cannot create another proposal or bypass the rejection by switching the Space to Auto. A genuinely later original user statement can reinstate it; a newer assistant paraphrase cannot. Repeated dismissal preserves the original rejection time. Existing historical dismissals are not backfilled, and detecting semantically equivalent rewritten claims remains the evidence reviewer's responsibility.
 
 Search uses whole-word terms, supports a single collaborator name, and follows one bounded link hop among person and project pages in the selected local Space.

@@ -4,10 +4,12 @@ import { KNOWLEDGE_ORGANIZATION_INSTRUCTIONS } from '../knowledgeOrganization'
 import type { AnalysisEvidenceEntry, AnalysisEvidenceShard } from './analysisContext'
 import type { ShardAnalysis } from './analysisFormat'
 import { AI_TASK_SUGGESTION_POLICY, INBOX_TASK_POLICY } from './inboxTaskPolicy'
+import type { UserActivityPatterns } from './userActivity'
 import { type AnalysisWikiPage, wikiPagesForPrompt } from './wikiPromptSafety'
 import type { PromptWorkItem } from './workItemPrompt'
 
-export const FINAL_WIKI_PAGE_LIMIT = 80
+/** Every page is listed so none is duplicated; the character budget decides which whole bodies fit. */
+export const FINAL_WIKI_PAGE_LIMIT = Number.POSITIVE_INFINITY
 export const FINAL_WIKI_CHARACTER_BUDGET = 240_000
 
 export const EVIDENCE_SYSTEM_PROMPT = `You analyze one chronological shard of a locally captured workday.
@@ -111,6 +113,11 @@ ${JSON.stringify(serializeShard(shard, locale))}
 </workday_shard>`
 }
 
+/** The same text orders Wiki pages for the prompt and for the safety filter applied to its answer. */
+export function finalWikiRelevance(analyses: ShardAnalysis[]) {
+  return JSON.stringify(analyses)
+}
+
 export function buildFinalPrompt(
   session: DailyReviewSession,
   analyses: ShardAnalysis[],
@@ -122,7 +129,8 @@ export function buildFinalPrompt(
   personalWikiPages: AnalysisWikiPage[],
   agentContextDocuments: AgentContextDocument[],
   durableWorkItems: PromptWorkItem[],
-  userName: string | null = null
+  userName: string | null = null,
+  userActivity: UserActivityPatterns | null = null
 ) {
   const memoryLanguage = language === 'nl' ? 'Dutch' : 'English'
   const sessionContext = {
@@ -165,7 +173,8 @@ export function buildFinalPrompt(
 
 <computer_user>${JSON.stringify({ name: userName })}</computer_user>
 Use this identity hint to distinguish the person's work from work merely visible on screen. It does not identify an audio speaker. Preserve named performers, recipients, project roles and handoffs from the evidence. A team role is relevance context, never evidence that this person accepted a particular task; if ownership is uncertain, retain the uncertainty without creating a personal obligation.
-When a private work-profile page is supplied in the Wiki context, use its dated, attributed role information to interpret relevance. Current explicit evidence and user corrections take precedence; uncertain profile observations remain uncertain and cannot establish task ownership.
+When a private work-profile page is supplied in the Wiki context, use its dated, attributed role information, stated preferences and working style to interpret relevance and to shape openTasks and aiSuggestion toward what is useful to this person. Current explicit evidence and user corrections take precedence; uncertain profile observations remain uncertain and cannot establish task ownership.
+user_activity is computed by code from recent recorded Days and is incomplete. Use it only to judge relevance: which projects currently matter, and which kinds of Tasks this person recently abandoned and therefore need distinct new evidence before returning. It is not evidence about today: never restate it in the summary, outcomes, timeline or conversations, never create a Task from it, and never copy it into the Wiki, because the application recomputes it.
 
 Update the living memory of this calendar day through ${formatTimestamp(coveredThrough, locale)}. The day may still be active.
 Reconcile the previous memory with the new chronological evidence. Later evidence wins: move completed open tasks into outcomes and remove anything made irrelevant. Preserve supported earlier facts even when the new evidence does not repeat them. Do not claim that app usage or a discussed plan proves completed work. A blocked, invalid, incomplete, or harness-limited test is not a pass and must remain explicitly unresolved.
@@ -205,7 +214,7 @@ Timeline and conversation times use local HH:mm with an end strictly later than 
 Description is a complete one- or two-sentence orientation to the session. Never cut a sentence short to fit. Details preserve the useful middle layer between raw capture and the summary: return 1–6 concise chronological observations with supported local times, covering consequential steps, decisions, results, blockers, and the state in which the work was left. They are not UI click logs. Keep exact filenames, symbols, commands, errors, people, or artifacts only when they save real time in a follow-up. Do not repeat the title or description.
 Conversations come exclusively from audioConversations. Screen-derived chats can inform other fields but are never captured conversations.
 For each conversation, description is one short list preview that captures its main outcome. Summary is a self-contained, factual account of the meaningful topics, reasoning, decisions, and unresolved questions in natural prose. Action points contain only explicit, still-relevant follow-up commitments from that conversation; use an empty array when none were agreed. Treat continuous speech as one conversation even when chronological shards or a short pause divide the evidence; split only when the human exchange actually ends and a new one begins. Distinguish tentative options from decisions and do not turn exploratory language into a settled direction. Never infer participants or speaker identities from microphone or system-audio transcripts.
-Knowledge suggestions maintain the current human-readable Wiki page. Every existing page in wiki_pages already identifies its canonical space. Include supported identity and relationship context, durable decisions, constraints, research, project state, remaining work, or operating knowledge; exclude raw dialogue and incidental private content.
+When today's evidence materially changes what the private self profile should say about the person's role, active responsibilities, stated preferences or working style, that profile update takes priority among knowledge suggestions. Knowledge suggestions maintain the current human-readable Wiki page. Every existing page in wiki_pages already identifies its canonical space. Include supported identity and relationship context, durable decisions, constraints, research, project state, remaining work, or operating knowledge; exclude raw dialogue and incidental private content.
 ${KNOWLEDGE_ORGANIZATION_INSTRUCTIONS}
 Agent context documents contain only Codex or Claude sources changed since the previous successful refresh. Use them exclusively to maintain knowledgeSuggestions. They must never change the Day summary, outcomes, tasks, project attention, conversations, or timeline unless the same fact is independently supported by chronological_subanalyses.
 Reconcile agent context into the Wiki without copying dialogue, provider-specific chat structure, tool output, or chronology. Merge overlapping Codex and Claude evidence into the same current page.
@@ -226,8 +235,11 @@ ${JSON.stringify(sessionContext)}
 </workday_session>
 <refresh_reason>${reason}</refresh_reason>
 <wiki_pages>
-${JSON.stringify(wikiPagesForPrompt(personalWikiPages, FINAL_WIKI_PAGE_LIMIT, FINAL_WIKI_CHARACTER_BUDGET))}
+${JSON.stringify(wikiPagesForPrompt(personalWikiPages, FINAL_WIKI_PAGE_LIMIT, FINAL_WIKI_CHARACTER_BUDGET, { relevantTo: finalWikiRelevance(analyses) }))}
 </wiki_pages>
+<user_activity>
+${JSON.stringify(userActivity)}
+</user_activity>
 <agent_context_documents>
 ${JSON.stringify(
   agentContextDocuments.map(({ provider, kind, sourceId, project, updatedAt, content }) => ({
