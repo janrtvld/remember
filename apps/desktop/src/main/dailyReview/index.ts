@@ -157,7 +157,7 @@ import {
 } from './context'
 import { isPassiveContext } from './contextActivity'
 import { isContextCaptureStale, shouldMonitorContextCapture } from './contextCaptureHealth'
-import { ContextSnapshotCompactor } from './contextCompaction'
+import { COMPACTION_SEED_WINDOW_MS, ContextSnapshotCompactor } from './contextCompaction'
 import {
   conversationAudioChunkPathAt,
   conversationAudioDurationSecondsAt,
@@ -1656,8 +1656,9 @@ async function startSession(): Promise<DailyReviewState> {
   activeSessionId = session.id
   startedAt = session.startedAt
   activeDurationMs = session.activeDurationMs
-  contextCompactor.reset(getEvidenceStore().readContextMoments(session.id))
-  persistSessions()
+  contextCompactor.reset(getEvidenceStore().readContextCompactionSeed(session.id, now - COMPACTION_SEED_WINDOW_MS))
+  writeSession(session)
+  emitSessions()
   beginRecorder()
   scheduleDayRollover()
   return buildState()

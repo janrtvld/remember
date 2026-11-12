@@ -11,6 +11,7 @@ import { selectAgentTasks } from '../../residentAgentPrivacy'
 import { mergeRevinoteMeetings } from '../../revinoteMeetings'
 import { DEFAULT_SETTINGS } from '../../settingsStore'
 import { parseDayMemory } from '../analysisFormat'
+import { COMPACTION_SEED_WINDOW_MS, ContextSnapshotCompactor } from '../contextCompaction'
 import { EvidenceStore } from '../evidenceStore'
 
 const paths: string[] = []
@@ -116,6 +117,60 @@ test('targeted task privacy lookup matches archive checks and observes exclusion
   store.deleteEvidenceSince(2_000)
   assert.deepEqual(targeted(), full())
   assert.equal(targeted().length, 0)
+  store.close()
+})
+
+test('the compaction seed carries recent capture across a resume and lets older windows start over', () => {
+  const store = createStore()
+  const minute = 60_000
+  const resumedAt = 100 * minute
+  store.upsertSession({
+    id: 'day',
+    startedAt: 0,
+    endedAt: null,
+    activeDurationMs: 0,
+    moments: [],
+    appActivity: [],
+    contextMoments: [],
+    memory: null,
+    refresh: { status: 'idle', reason: null, targetThrough: null, error: null, progress: null, run: null },
+  })
+  const capture = (windowTitle: string, timestamp: number, text: string) => ({
+    timestamp,
+    appName: 'Editor',
+    bundleId: 'com.example.editor',
+    windowTitle,
+    text,
+    textSource: 'accessibility' as const,
+    trigger: 'change',
+    monitorName: 'Built-in',
+    screenshotPath: '',
+  })
+  const stored = [
+    capture('Quiet since the morning', 20 * minute, 'left'),
+    capture('Active recently', 90 * minute, 'one\ntwo'),
+    capture('Active recently', 97 * minute, 'two\nthree'),
+  ]
+  for (const [index, moment] of stored.entries()) {
+    store.appendContextMoment('day', { id: `context-${index}`, ...moment }, null, moment.bundleId)
+  }
+  const seed = store.readContextCompactionSeed('day', resumedAt - COMPACTION_SEED_WINDOW_MS)
+  assert.deepEqual(
+    seed.map((moment) => [moment.windowTitle, moment.timestamp, moment.text]),
+    [
+      ['Active recently', 90 * minute, 'one\ntwo'],
+      ['Active recently', 97 * minute, 'two\nthree'],
+    ]
+  )
+  const compactor = new ContextSnapshotCompactor()
+  compactor.reset(seed)
+
+  // Recent text is not stored again; only what became visible since.
+  assert.equal(compactor.compact(capture('Active recently', 102 * minute, 'two\nthree\nfour'))?.text, 'four')
+  // The quarter-hour checkpoint still counts from before the resume.
+  assert.equal(compactor.compact(capture('Active recently', 106 * minute, 'four\nfive'))?.text, 'four\nfive')
+  // A window outside the seed starts over with everything visible.
+  assert.equal(compactor.compact(capture('Quiet since the morning', 103 * minute, 'left\nright'))?.text, 'left\nright')
   store.close()
 })
 
@@ -1713,8 +1768,12 @@ test('discards a manual meeting and its overlapping audio evidence', async () =>
     observedAt: 2000,
   })
 
+  assert.equal(store.search('Delete').length, 1)
+
   store.discardManualMeeting(meeting.id, 3500)
 
+  assert.deepEqual(store.search('Delete'), [])
+  assert.equal(store.search('Keep').length, 1)
   assert.equal(store.activeManualMeeting(), null)
   assert.deepEqual(store.listManualMeetings(session.id), [])
   assert.deepEqual(store.listCallSignals(session.id), [])

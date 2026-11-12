@@ -46,6 +46,7 @@ import {
 } from '../hostTaskProtocol'
 import { type AmbientEvidenceRef, AmbientTaskStore } from './ambientTaskStore'
 import type { AnalysisEvidenceEntry } from './analysisContext'
+import type { ContextCompactionSeed } from './contextCompaction'
 import { localDayKey, sessionLocalDay } from './dayLifecycle'
 import { type ProactiveCommit, ProactiveStore } from './proactiveStore'
 import { prepareWorkdayMemory, pruneWorkdayProvenance, readWorkdayMemory } from './workdayMemory'
@@ -2353,10 +2354,12 @@ export class EvidenceStore {
     transaction(this.database, () => {
       this.database
         .prepare(
+          // Search rows are found through audio_search_row. Matching on the unindexed kind and evidence_id columns
+          // reads the whole search corpus, which takes seconds on a long history.
           `DELETE FROM evidence_fts
-           WHERE kind = 'audio' AND evidence_id IN (
-             SELECT id FROM audio_evidence
-             WHERE workday_id = ? AND started_at < ? AND started_at + duration_ms > ?
+           WHERE rowid IN (
+             SELECT r.fts_rowid FROM audio_search_row r JOIN audio_evidence a ON a.id = r.evidence_id
+             WHERE a.workday_id = ? AND a.started_at < ? AND a.started_at + a.duration_ms > ?
            )`
         )
         .run(meeting.workdayId, endedAt, meeting.startedAt)
@@ -2858,8 +2861,9 @@ export class EvidenceStore {
       this.database
         .prepare(
           `DELETE FROM evidence_fts
-           WHERE kind = 'audio' AND evidence_id IN (
-             SELECT id FROM audio_evidence WHERE started_at + duration_ms > ?
+           WHERE rowid IN (
+             SELECT r.fts_rowid FROM audio_search_row r JOIN audio_evidence a ON a.id = r.evidence_id
+             WHERE a.started_at + a.duration_ms > ?
            )`
         )
         .run(cutoff)
@@ -3634,6 +3638,28 @@ export class EvidenceStore {
       moments.push(...batch.map(contextMomentFromRow))
     }
     return moments
+  }
+
+  /**
+   * What the capture compactor needs to resume a Day: the context captured since `since`. Older windows start over
+   * with a full checkpoint, so their text is not read; reading a busy Day's text takes most of a second.
+   */
+  readContextCompactionSeed(sessionId: string, since: number): ContextCompactionSeed[] {
+    const rows = this.database
+      .prepare(
+        `SELECT a.display_name, c.window_title, c.timestamp, c.text
+         FROM context_evidence c
+         JOIN application a ON a.id = c.application_id
+         WHERE c.workday_id = ? AND c.timestamp >= ?
+         ORDER BY c.timestamp`
+      )
+      .all(sessionId, since) as DatabaseRow[]
+    return rows.map((row) => ({
+      appName: stringValue(row.display_name),
+      windowTitle: stringValue(row.window_title),
+      timestamp: numberValue(row.timestamp),
+      text: stringValue(row.text),
+    }))
   }
 
   readContextMoments(sessionId: string): DailyReviewContextMoment[] {

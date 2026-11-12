@@ -57,6 +57,16 @@ function boundedFocusedElement(focusedElement: ContextCaptureEvent['focusedEleme
   return Object.values(bounded).some(Boolean) ? bounded : undefined
 }
 
+/** What the compactor needs from an earlier capture; full context moments qualify. */
+export type ContextCompactionSeed = Pick<DailyReviewContextMoment, 'appName' | 'windowTitle' | 'timestamp' | 'text'>
+
+/**
+ * How far back capture is read when it resumes. A window last captured longer ago starts over with a full
+ * checkpoint, exactly as an unseen window does, so nothing older is needed. The margin covers captures taken just
+ * before the resume and handled just after it.
+ */
+export const COMPACTION_SEED_WINDOW_MS = FULL_CHECKPOINT_INTERVAL_MS + 60_000
+
 /**
  * Accessibility snapshots contain the complete visible window tree. The tree
  * is mostly identical on every heartbeat, so persisting it verbatim makes a
@@ -69,7 +79,7 @@ export class ContextSnapshotCompactor {
   private focusedElementKey = ''
   private passive = false
 
-  reset(seed: DailyReviewContextMoment[] = []): void {
+  reset(seed: ContextCompactionSeed[] = []): void {
     this.windows.clear()
     this.focusedWindowKey = ''
     this.focusedElementKey = ''

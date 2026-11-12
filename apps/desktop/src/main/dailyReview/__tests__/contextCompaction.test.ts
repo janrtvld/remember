@@ -120,13 +120,7 @@ describe('ContextSnapshotCompactor', () => {
 
   it('can seed state when resuming an existing workday', () => {
     const compactor = new ContextSnapshotCompactor()
-    compactor.reset([
-      {
-        id: 'context-1',
-        ...event(1_000, 'Already stored'),
-        screenshotPath: '',
-      },
-    ])
+    compactor.reset([event(1_000, 'Already stored')])
 
     const resumedFocus = compactor.compact(event(2_000, 'Already stored'))
     assert.equal(resumedFocus?.appName, 'Dia')
