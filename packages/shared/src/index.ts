@@ -1178,7 +1178,7 @@ export interface AgentTraceDiagnostic {
   error: string
 }
 
-/** Append-only operational activity. Failed runs may include redacted raw agent output for explicit debugging. */
+/** Recent operational activity. Stored failed runs may include redacted raw agent output for explicit debugging. */
 export interface AgentTraceEvent {
   id: string
   action: AgentTraceAction

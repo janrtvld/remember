@@ -1,9 +1,16 @@
 import assert from 'node:assert/strict'
+import { appendFileSync, statSync } from 'node:fs'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, it } from 'node:test'
-import { appendAgentTraceAt, readAgentTraceAt, recoverInterruptedAgentTraceAt } from '../agentTraceStore'
+import {
+  appendAgentTraceAt,
+  compactAgentTraceAt,
+  createAgentTraceReader,
+  readAgentTraceAt,
+  recoverInterruptedAgentTraceAt,
+} from '../agentTraceStore'
 
 const temporaryDirectories: string[] = []
 
@@ -192,5 +199,78 @@ describe('agent trace store', () => {
     })
 
     assert.deepEqual(readAgentTraceAt(path)[0]?.diagnostics, [diagnostic])
+  })
+
+  it('lists appended activity incrementally without diagnostics or unfinished lines', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'remember-agent-trace-'))
+    temporaryDirectories.push(directory)
+    const path = join(directory, 'trace.ndjson')
+    const list = createAgentTraceReader(path, 2)
+    assert.deepEqual(list(), [])
+    const event = (id: string, startedAt: number, status: 'running' | 'completed' = 'completed') => ({
+      id,
+      action: 'day-refresh' as const,
+      provider: 'codex' as const,
+      status,
+      startedAt,
+      completedAt: status === 'completed' ? startedAt + 1 : null,
+      dayId: 'day-1',
+      reason: 'manual' as const,
+      error: null,
+      logs: [],
+    })
+    appendAgentTraceAt(path, { ...event('first', 100, 'running'), diagnostics: [{ prompt: 'private' } as never] })
+    assert.deepEqual(list(), [{ ...event('first', 100, 'running'), diagnostics: [] }])
+
+    const second = JSON.stringify(event('second', 200))
+    appendFileSync(path, second.slice(0, 20))
+    assert.deepEqual(
+      list().map((entry) => entry.id),
+      ['first']
+    )
+    appendFileSync(path, `${second.slice(20)}\n`)
+    appendAgentTraceAt(path, event('first', 100))
+    appendAgentTraceAt(path, event('third', 300))
+    assert.deepEqual(
+      list().map((entry) => [entry.id, entry.status]),
+      [
+        ['third', 'completed'],
+        ['second', 'completed'],
+      ]
+    )
+  })
+
+  it('compacts superseded lines and keeps listing after the rewrite', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'remember-agent-trace-'))
+    temporaryDirectories.push(directory)
+    const path = join(directory, 'trace.ndjson')
+    const event = (id: string, startedAt: number, message: string) => ({
+      id,
+      action: 'agent-learning' as const,
+      provider: 'codex' as const,
+      status: 'completed' as const,
+      startedAt,
+      completedAt: startedAt + 1,
+      dayId: null,
+      reason: null,
+      error: null,
+      logs: [{ timestamp: startedAt, message }],
+    })
+    appendAgentTraceAt(path, event('kept', 2, 'latest'))
+    assert.equal(compactAgentTraceAt(path), false)
+    for (let index = 0; index < 900; index += 1) appendAgentTraceAt(path, event('repeated', 1, `update ${index}`))
+    const list = createAgentTraceReader(path)
+    assert.equal(list().length, 2)
+    const sizeBefore = statSync(path).size
+
+    assert.equal(compactAgentTraceAt(path), true)
+    assert.ok(statSync(path).size < sizeBefore / 100)
+    const expected = [
+      { ...event('kept', 2, 'latest'), diagnostics: [] },
+      { ...event('repeated', 1, 'update 899'), diagnostics: [] },
+    ]
+    assert.deepEqual(readAgentTraceAt(path), expected)
+    appendAgentTraceAt(path, event('new', 3, 'after'))
+    assert.deepEqual(list(), [{ ...event('new', 3, 'after'), diagnostics: [] }, ...expected])
   })
 })

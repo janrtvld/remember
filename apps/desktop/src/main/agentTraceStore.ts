@@ -1,8 +1,21 @@
-import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
+import {
+  appendFileSync,
+  closeSync,
+  fstatSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs'
 import { dirname } from 'node:path'
 import type { AgentTraceAction, AgentTraceDiagnostic, AgentTraceEvent } from '@remember/shared'
 
 const MAX_TRACE_EVENTS = 200
+// Every progress update appends its whole event again, so the file holds many
+// superseded lines per retained event before it is worth rewriting.
+const COMPACT_AFTER_LINES = MAX_TRACE_EVENTS * 4
 const MAX_DIAGNOSTICS = 8
 const MAX_DIAGNOSTIC_TEXT_LENGTH = 1024 * 1024
 type StoredTraceEvent = Omit<Partial<AgentTraceEvent>, 'provider'> & {
@@ -157,6 +170,22 @@ function normalizeTraceEvent(value: unknown): AgentTraceEvent | null {
   }
 }
 
+function mergeTraceLines(latestById: Map<string, AgentTraceEvent>, lines: string[], withDiagnostics: boolean) {
+  for (const line of lines) {
+    if (!line.trim()) continue
+    try {
+      const event = normalizeTraceEvent(JSON.parse(line) as unknown)
+      if (event) latestById.set(event.id, withDiagnostics ? event : { ...event, diagnostics: [] })
+    } catch {
+      // Ignore a partial final line if another process is appending.
+    }
+  }
+}
+
+function latestTraceEvents(latestById: Map<string, AgentTraceEvent>, limit: number) {
+  return [...latestById.values()].sort((left, right) => right.startedAt - left.startedAt).slice(0, limit)
+}
+
 export function readAgentTraceAt(path: string, limit = MAX_TRACE_EVENTS) {
   let contents = ''
   try {
@@ -166,16 +195,71 @@ export function readAgentTraceAt(path: string, limit = MAX_TRACE_EVENTS) {
   }
 
   const latestById = new Map<string, AgentTraceEvent>()
-  for (const line of contents.split('\n')) {
-    if (!line.trim()) continue
+  mergeTraceLines(latestById, contents.split('\n'), true)
+  return latestTraceEvents(latestById, limit)
+}
+
+/**
+ * Lists recent activity for display. The list is polled, so each call reads
+ * only what was appended since the previous one, and it omits diagnostics:
+ * raw prompts and output stay in the file for explicit debugging.
+ */
+export function createAgentTraceReader(path: string, limit = MAX_TRACE_EVENTS) {
+  let inode: number | null = null
+  let offset = 0
+  let latestById = new Map<string, AgentTraceEvent>()
+  return () => {
+    let file: number
     try {
-      const event = normalizeTraceEvent(JSON.parse(line) as unknown)
-      if (event) latestById.set(event.id, event)
+      file = openSync(path, 'r')
     } catch {
-      // Ignore a partial final line if another process is appending.
+      return []
     }
+    try {
+      const { ino, size } = fstatSync(file)
+      if (ino !== inode || size < offset) {
+        inode = ino
+        offset = 0
+        latestById = new Map()
+      }
+      if (size > offset) {
+        const appended = Buffer.allocUnsafe(size - offset)
+        const length = readSync(file, appended, 0, appended.length, offset)
+        // Leave a line that is still being written for the next call.
+        const complete = appended.lastIndexOf(0x0a, length - 1) + 1
+        mergeTraceLines(latestById, appended.toString('utf8', 0, complete).split('\n'), false)
+        offset += complete
+        if (latestById.size > limit) {
+          latestById = new Map(latestTraceEvents(latestById, limit).map((event) => [event.id, event]))
+        }
+      }
+    } finally {
+      closeSync(file)
+    }
+    return latestTraceEvents(latestById, limit)
   }
-  return [...latestById.values()].sort((left, right) => right.startedAt - left.startedAt).slice(0, limit)
+}
+
+/** Rewrites a trace that has accumulated superseded lines down to its retained events. */
+export function compactAgentTraceAt(path: string, limit = MAX_TRACE_EVENTS) {
+  let contents = ''
+  try {
+    contents = readFileSync(path, 'utf8')
+  } catch {
+    return false
+  }
+  const lines = contents.split('\n')
+  if (lines.length <= COMPACT_AFTER_LINES) return false
+  const latestById = new Map<string, AgentTraceEvent>()
+  mergeTraceLines(latestById, lines, true)
+  const retained = latestTraceEvents(latestById, limit).reverse()
+  const temporaryPath = `${path}.compacting`
+  writeFileSync(temporaryPath, retained.map((event) => `${JSON.stringify(event)}\n`).join(''), {
+    encoding: 'utf8',
+    mode: 0o600,
+  })
+  renameSync(temporaryPath, path)
+  return true
 }
 
 export function appendAgentTraceAt(path: string, event: AgentTraceEvent) {
