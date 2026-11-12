@@ -251,7 +251,9 @@ export function SettingsView() {
             <Description className="mt-0.5 max-w-prose text-pretty text-slate-500 text-xs leading-[1.5]">
               {local.settings.offlineMode
                 ? t('Gepauzeerd zolang Offline mode aanstaat.')
-                : t('Stuur technische foutinformatie naar Sentry, zonder opnames, transcripties of prompts.')}
+                : t(
+                    'Deel technische foutinformatie om Remember te verbeteren, zonder opnames, transcripties of prompts.'
+                  )}
             </Description>
             {errorReportingError ? (
               <p role="alert" className="mt-1 text-danger-700 text-xs">

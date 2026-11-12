@@ -2409,8 +2409,8 @@ function SettingsView() {
             offlineMode
               ? t('Gepauzeerd zolang Offline mode aanstaat.', 'Paused while Offline mode is on.')
               : t(
-                  'Stuur technische foutinformatie naar Sentry, zonder opnames, transcripties of prompts.',
-                  'Send technical error information to Sentry, without recordings, transcripts, or prompts.'
+                  'Deel technische foutinformatie om Remember te verbeteren, zonder opnames, transcripties of prompts.',
+                  'Share technical error information to help improve Remember, without recordings, transcripts, or prompts.'
                 )
           }
           value={errorReportingEnabled}
