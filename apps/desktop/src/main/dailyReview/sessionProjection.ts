@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import type { ConversationEpisode, DailyReviewSession, DayMemory } from '@remember/shared'
+import type { ContextMomentReference, ConversationEpisode, DailyReviewSession, DayMemory } from '@remember/shared'
 import { conversationAudioChunkPathAt, conversationAudioPathAt } from './conversationAudio'
 import type { EvidenceStore } from './evidenceStore'
 
@@ -19,6 +19,29 @@ function rendererMemory(memory: DayMemory | null) {
     rendererMemories.set(memory, projected)
   }
   return projected
+}
+
+// A long history holds hundreds of thousands of context references, and the renderer only needs to know when some
+// were removed. Each Day therefore carries a count of removals instead of the references themselves.
+const NO_CONTEXT_MOMENTS: ContextMomentReference[] = []
+const contextHistory = new Map<string, { moments: ContextMomentReference[]; removals: number }>()
+
+function contextEvidenceRemovals(session: DailyReviewSession) {
+  const known = contextHistory.get(session.id)
+  if (!known) {
+    contextHistory.set(session.id, { moments: session.contextMoments, removals: 0 })
+    return 0
+  }
+  const before = known.moments
+  const after = session.contextMoments
+  if (before !== after) {
+    // Capture only appends, so anything other than an extension of the previous list means evidence was removed.
+    if (after.length < before.length || (before.length > 0 && before.at(-1)?.id !== after[before.length - 1]?.id)) {
+      known.removals += 1
+    }
+    known.moments = after
+  }
+  return known.removals
 }
 
 export function projectDailyReviewSessions(
@@ -146,6 +169,8 @@ export function projectDailyReviewSessions(
     })
     return {
       ...session,
+      contextMoments: NO_CONTEXT_MOMENTS,
+      contextEvidenceRemovals: contextEvidenceRemovals(session),
       memory: rendererMemory(session.memory),
       ongoingConversations,
       conversationCandidates,

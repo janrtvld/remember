@@ -1941,6 +1941,7 @@ export function createBrowserBridge(): RememberBridge {
         moments: day.moments.filter((moment) => moment.startedAt < cutoff),
         appActivity: day.appActivity.filter((activity) => activity.startedAt < cutoff),
         contextMoments: day.contextMoments.filter((moment) => moment.timestamp < cutoff),
+        contextEvidenceRemovals: (day.contextEvidenceRemovals ?? 0) + 1,
       }))
       emitDays()
       return days

@@ -1036,9 +1036,8 @@ async function smoke(fixture: ReturnType<typeof seedProfile>) {
   )
   checks.push('Disconnect removes imported meetings through real IPC and deletes their persisted snapshot')
   const day = days.find((day) => day.id === fixture.dayId)
-  assert.equal(day?.contextMoments[0]?.id, 'qa-context')
   assert.equal(day?.moments[0]?.id, 'qa-audio')
-  assert(day?.contextMoments[0] && !('text' in day.contextMoments[0]), 'Day navigation must not hydrate source text')
+  assert.deepEqual(day?.contextMoments, [], 'Day navigation must not carry context evidence')
   for (const query of ['example.test/verification', 'Known input value']) {
     const matches = await target.evaluate((query) => window.remember.searchDays(query, 'en-US'), query)
     assert(
@@ -1232,8 +1231,7 @@ async function smoke(fixture: ReturnType<typeof seedProfile>) {
   checks.push('Disconnected Revinote meetings remain absent after full process restart')
   const restored = restartedDays.find((day) => day.id === fixture.dayId)
   assert.equal(restored?.memory?.timeline.find((item) => item.id === fixture.timelineId)?.title, title)
-  assert.equal(restored?.contextMoments[0]?.id, 'qa-context')
-  assert.deepEqual(restored?.contextMoments, day.contextMoments)
+  assert.deepEqual(restored?.contextMoments, [])
   assert.deepEqual(restored?.appActivity, day.appActivity)
   assert.deepEqual(restored?.memory?.timeline[0]?.sourceRefs, day.memory?.timeline[0]?.sourceRefs)
   assert(restored?.memory?.hiddenTimelineItemIds?.includes(fixture.timelineId))
@@ -2189,8 +2187,7 @@ async function contextLoadingQa(fixture: ReturnType<typeof seedProfile>) {
   const days = await target.evaluate(() => window.remember.listDays())
   const day = days.find((day) => day.id === fixture.dayId)
   assert(day)
-  assert(day.contextMoments.some((moment) => moment.id === 'qa-context'))
-  assert(day.contextMoments.every((moment) => !('text' in moment) && !('focusedElement' in moment)))
+  assert.deepEqual(day.contextMoments, [], 'Day snapshots must not carry context evidence')
   const query = 'Known input value'
   const matches = await target.evaluate((query) => window.remember.searchDays(query, 'en-US'), query)
   assert(matches.timeline.some((result) => result.day.id === fixture.dayId))

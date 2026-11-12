@@ -1212,7 +1212,10 @@ export interface Day {
   activeDurationMs: number
   moments: AudioMoment[]
   appActivity: AppActivity[]
+  /** Held by the main process. The renderer's copy of a Day leaves this empty; see `contextEvidenceRemovals`. */
   contextMoments: ContextMomentReference[]
+  /** Runtime projection: rises whenever context evidence is removed from the Day, so cached search can be dropped. */
+  contextEvidenceRemovals?: number
   memory: DayMemory | null
   refresh: DayRefresh
   /** Runtime projection of live, explicitly scoped speech episodes. */

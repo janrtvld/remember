@@ -168,3 +168,31 @@ test('the renderer copy of a memory omits analysis provenance and stays the same
   assert.equal(session.memory, memory)
   assert.ok(memory.analysisProvenance)
 })
+
+test('the renderer copy of a Day reports removed context evidence without carrying the references', () => {
+  const reference = (id: string) => ({ id, timestamp: 1, bundleId: 'com.example.app' })
+  const session: DailyReviewSession = {
+    id: 'day-with-context',
+    startedAt: 0,
+    endedAt: 1,
+    activeDurationMs: 1,
+    moments: [],
+    appActivity: [],
+    contextMoments: [reference('first'), reference('second')],
+    memory: null,
+    refresh: { status: 'idle', reason: null, targetThrough: null, error: null, progress: null, run: null },
+  }
+  const store = { listConversationEpisodes: () => [], listSpeechSegments: () => [], listEpisodeAnalyses: () => [] }
+  const project = (contextMoments: DailyReviewSession['contextMoments']) =>
+    projectDailyReviewSessions([{ ...session, contextMoments }], store, tmpdir(), 2)[0]
+
+  const initial = project(session.contextMoments)
+  assert.deepEqual(initial.contextMoments, [])
+  assert.equal(initial.contextEvidenceRemovals, 0)
+  const appended = project([...session.contextMoments, reference('third')])
+  assert.equal(appended.contextEvidenceRemovals, 0)
+  assert.equal(appended.contextMoments, initial.contextMoments)
+  assert.equal(project([reference('first'), reference('third')]).contextEvidenceRemovals, 1)
+  assert.equal(project([reference('first'), reference('third'), reference('fourth')]).contextEvidenceRemovals, 1)
+  assert.equal(project([reference('third'), reference('fourth'), reference('fifth')]).contextEvidenceRemovals, 2)
+})

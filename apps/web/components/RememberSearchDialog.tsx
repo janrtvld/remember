@@ -53,12 +53,11 @@ function sourceEvidenceRemoved(previous: Day[], next: Day[]) {
   return previous.some((day) => {
     const current = byId.get(day.id)
     if (!current) return true
-    for (const key of ['contextMoments', 'moments'] as const) {
-      const before = day[key]
-      const after = current[key]
-      if (after.length < before.length || (before.length && before.at(-1)?.id !== after[before.length - 1]?.id))
-        return true
-    }
+    if ((current.contextEvidenceRemovals ?? 0) !== (day.contextEvidenceRemovals ?? 0)) return true
+    const before = day.moments
+    const after = current.moments
+    if (after.length < before.length || (before.length && before.at(-1)?.id !== after[before.length - 1]?.id))
+      return true
     return (
       JSON.stringify(day.memory?.hiddenTimelineItemIds) !== JSON.stringify(current.memory?.hiddenTimelineItemIds) ||
       JSON.stringify(day.memory?.deletedConversationWindows) !==
