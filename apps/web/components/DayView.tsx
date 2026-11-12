@@ -918,17 +918,19 @@ function ConversationAudioPlayback({
         ) : (
           <ConversationAudioSkeleton />
         )}
-        <IconButton
-          size="compact"
-          className="shrink-0 text-slate-600 hover:text-slate-800"
-          aria-label={t('Audio downloaden')}
-          title={t('Audio downloaden')}
-          aria-busy={downloading}
-          disabled={downloading}
-          onClick={() => void download()}
-        >
-          {downloading ? <Spinner size="xs" /> : <IconArrowInbox className="size-3.5" aria-hidden="true" />}
-        </IconButton>
+        {audioUrl === null ? null : (
+          <IconButton
+            size="compact"
+            className="shrink-0 text-slate-600 hover:text-slate-800"
+            aria-label={t('Audio downloaden')}
+            title={t('Audio downloaden')}
+            aria-busy={downloading}
+            disabled={downloading}
+            onClick={() => void download()}
+          >
+            {downloading ? <Spinner size="xs" /> : <IconArrowInbox className="size-3.5" aria-hidden="true" />}
+          </IconButton>
+        )}
       </div>
       {downloadError ? (
         <span className="text-danger-700 text-xs" role="alert">

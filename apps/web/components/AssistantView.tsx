@@ -1723,7 +1723,7 @@ function AssistantMessageView({
               disabled={busy}
               onClick={onRetry}
             >
-              <IconArrowRotateClockwise className="size-4" aria-hidden="true" />
+              <IconArrowRotateClockwise className="size-3.5" aria-hidden="true" />
             </Button>
           ) : null}
         </div>
