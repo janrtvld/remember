@@ -1,9 +1,25 @@
 import { existsSync } from 'node:fs'
-import type { ConversationEpisode, DailyReviewSession } from '@remember/shared'
+import type { ConversationEpisode, DailyReviewSession, DayMemory } from '@remember/shared'
 import { conversationAudioChunkPathAt, conversationAudioPathAt } from './conversationAudio'
 import type { EvidenceStore } from './evidenceStore'
 
 export const CONVERSATION_RECOVERY_RETENTION_MS = 24 * 60 * 60_000
+
+// Analysis provenance lists every source a Day's analysis read. It runs to megabytes per Day and only the main
+// process uses it, so the renderer's copy of a memory leaves it out. The copy is kept per memory object because Day
+// changes are detected by identity.
+const rendererMemories = new WeakMap<DayMemory, DayMemory>()
+
+function rendererMemory(memory: DayMemory | null) {
+  if (!memory?.analysisProvenance) return memory
+  let projected = rendererMemories.get(memory)
+  if (!projected) {
+    const { analysisProvenance: _provenance, ...visible } = memory
+    projected = visible
+    rendererMemories.set(memory, projected)
+  }
+  return projected
+}
 
 export function projectDailyReviewSessions(
   sessions: DailyReviewSession[],
@@ -130,6 +146,7 @@ export function projectDailyReviewSessions(
     })
     return {
       ...session,
+      memory: rendererMemory(session.memory),
       ongoingConversations,
       conversationCandidates,
       recoverableConversationBlocks,

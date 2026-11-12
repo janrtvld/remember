@@ -1,3 +1,4 @@
+import { once } from 'node:events'
 import type { Server } from 'node:http'
 import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -610,13 +611,13 @@ async function startApplication() {
   const openedFromDeepLink = pendingActivation || pendingDeepLink !== null
   pendingActivation = false
   pendingDeepLink = null
-  // The window opens first and gets one turn of the event loop to appear before the rest of launch occupies the
-  // main process. The renderer then starts alongside that work. Everything from `loadRenderer` to the end of this
+  // The window opens first and is given until it reports being shown (a tenth of a second at most) before the rest
+  // of launch occupies the main process. The renderer then starts alongside that work. Everything from `loadRenderer` to the end of this
   // function must stay synchronous: the renderer's first calls are answered only once this function returns, and by
   // then every handler and the day state they read must exist.
   const loadRenderer = createWindow(initialRendererUrl, openedFromDeepLink ? true : undefined)
   markStartup('window-created')
-  await delay(0)
+  if (mainWindow?.isVisible()) await Promise.race([once(mainWindow, 'show'), delay(100)])
   loadRenderer(async () => {
     // The loaded page still has to fetch its data and render; leave the main process free for that first.
     await delay(1_000)

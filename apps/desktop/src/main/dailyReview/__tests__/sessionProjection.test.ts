@@ -141,3 +141,30 @@ test('session broadcasts hydrate only recoverable days and preserve current audi
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('the renderer copy of a memory omits analysis provenance and stays the same object between broadcasts', () => {
+  const memory = {
+    summary: 'Release planning',
+    analysisProvenance: { version: 1, rawSources: [] },
+  } as unknown as NonNullable<DailyReviewSession['memory']>
+  const session: DailyReviewSession = {
+    id: 'day',
+    startedAt: 0,
+    endedAt: 1,
+    activeDurationMs: 1,
+    moments: [],
+    appActivity: [],
+    contextMoments: [],
+    memory,
+    refresh: { status: 'idle', reason: null, targetThrough: null, error: null, progress: null, run: null },
+  }
+  const store = { listConversationEpisodes: () => [], listSpeechSegments: () => [], listEpisodeAnalyses: () => [] }
+  const [first] = projectDailyReviewSessions([session], store, tmpdir(), 2)
+  const [second] = projectDailyReviewSessions([session], store, tmpdir(), 3)
+
+  assert.equal(first.memory?.summary, 'Release planning')
+  assert.equal(first.memory?.analysisProvenance, undefined)
+  assert.equal(second.memory, first.memory)
+  assert.equal(session.memory, memory)
+  assert.ok(memory.analysisProvenance)
+})
