@@ -46,7 +46,7 @@ import { checkAgent } from '../agent'
 import { agentActivityEvidence } from '../agentActivityEvidence'
 import { buildWorkItemAgentContext } from '../agentKnowledgeContext'
 import { getAgentLearningPolicyToken, latestAgentLearningEventAt, readAgentLearningEvents } from '../agentLearning'
-import { recordAgentTrace, recoverInterruptedAgentTrace } from '../agentTraceRepository'
+import { recordAgentTrace } from '../agentTraceRepository'
 import { captureScheduleAction } from '../captureSchedulePolicy'
 import { getCodexModels } from '../codexModels'
 import { exportConversationAudio } from '../conversationAudioExport'
@@ -502,18 +502,24 @@ function screenPermissionStatus(): ScreenPermissionStatus {
   return systemAudioCheckStatus === 'failed' ? 'unknown' : 'not-determined'
 }
 
+// macOS answers through a blocking call that takes tens of milliseconds, and state is rebuilt in bursts that each
+// ask several times, so one answer serves the burst.
+let microphonePermissionRead: { status: ScreenPermissionStatus; at: number } | null = null
+
 function microphonePermissionStatus(): ScreenPermissionStatus {
   if (process.platform !== 'darwin') return 'granted'
+  const now = Date.now()
+  if (microphonePermissionRead && now - microphonePermissionRead.at < 1_000) return microphonePermissionRead.status
   const permission = systemPreferences.getMediaAccessStatus('microphone')
-  switch (permission) {
-    case 'granted':
-    case 'denied':
-    case 'restricted':
-    case 'not-determined':
-      return permission
-    default:
-      return 'unknown'
-  }
+  const status =
+    permission === 'granted' ||
+    permission === 'denied' ||
+    permission === 'restricted' ||
+    permission === 'not-determined'
+      ? permission
+      : 'unknown'
+  microphonePermissionRead = { status, at: now }
+  return status
 }
 
 function buildState(): DailyReviewState {
@@ -4259,6 +4265,7 @@ export function registerDailyReviewIpc({
     const before = microphonePermissionStatus()
     if (process.platform === 'darwin' && before === 'not-determined') {
       await systemPreferences.askForMediaAccess('microphone')
+      microphonePermissionRead = null
     }
     const after = microphonePermissionStatus()
     if (before !== 'granted' && after === 'granted') {
@@ -4868,7 +4875,6 @@ export function startDailyReview(mainWindowGetter: () => BrowserWindow | null): 
   const startedAt = Date.now()
   if (isOfflineMode()) getEvidenceStore().beginOfflinePeriod(startedAt)
   else getEvidenceStore().endOfflinePeriod(startedAt)
-  recoverInterruptedAgentTrace()
   const recoveredSessions = settleFailedRevinoteProcessing(recoverInterruptedSessions(readSessions()))
   const importedRevinoteMeetings = getImportedRevinoteMeetings()
   revinoteActionVersions.clear()

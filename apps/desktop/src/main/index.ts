@@ -1,5 +1,6 @@
 import type { Server } from 'node:http'
 import path from 'node:path'
+import { setTimeout as delay } from 'node:timers/promises'
 import { CHANNELS } from '@remember/shared'
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, protocol, session, shell } from 'electron'
 import { checkAgent, logoutAgent, openAgentChat, openAgentLogin } from './agent'
@@ -15,7 +16,7 @@ import {
   setWorkItemAgentProject,
   setWorkItemAgentThread,
 } from './agentProjects'
-import { listAgentTrace } from './agentTraceRepository'
+import { listAgentTrace, recoverInterruptedAgentTrace } from './agentTraceRepository'
 import { cancelAgentTurn, runAgentTurn } from './agentTurn'
 import { getAgentUsage } from './agentUsageRepository'
 import { parseRememberDeepLink, type RememberDeepLink } from './appDeepLink'
@@ -46,7 +47,7 @@ import { getEvidenceStore } from './dailyReview/evidenceRepository'
 import { disposeSharedMicrophoneCapture } from './dailyReview/microphoneAudio'
 import { deleteAllLocalData } from './dataReset'
 import { resetDevelopmentPermissions } from './developmentPermissions'
-import { disposeDictation, startDictation } from './dictation'
+import { disposeDictation, prewarmDictation, startDictation } from './dictation'
 import { createEdgeWidget } from './edgeWidget'
 import { installElectronNetworkPolicy } from './electronNetworkPolicy'
 import {
@@ -88,6 +89,7 @@ import {
   updateSettings,
 } from './settings'
 import { startupErrorPath, startupErrorReason } from './startupError'
+import { markStartup, observeStartupContent, reportStartupTimeline } from './startupTimeline'
 import { createTray, disposeTray, refreshTray } from './tray'
 import { applyAutomaticUpdatePolicy, applyOfflineUpdatePolicy, registerUpdater } from './updater'
 import { developmentUserDataDirectory } from './userDataDirectory'
@@ -95,6 +97,7 @@ import { getUserName } from './userName'
 import { cancelDownload } from './voiceNotes/models'
 import { disposeWikiCliServer, startWikiCliServer } from './wikiCliServer'
 
+markStartup('main-imports-evaluated')
 const agentInteractions = createAgentInteractions(() => {
   for (const window of BrowserWindow.getAllWindows()) window.webContents.send(CHANNELS.agentInteractionsChanged)
 })
@@ -105,6 +108,7 @@ function notifyWorkerStateChanged() {
   for (const window of BrowserWindow.getAllWindows()) window.webContents.send(CHANNELS.memoryChanged)
 }
 
+const launchedAt = Date.now()
 let mainWindow: BrowserWindow | null = null
 let disposeEdgeWidget: (() => void) | null = null
 let isQuitting = false
@@ -169,6 +173,8 @@ if (claudeAnalysisConfig.status === 'invalid') {
   console.warn(`[claude-config] ${claudeAnalysisConfig.detail} File: ${claudeAnalysisConfig.path}`)
 }
 
+markStartup('main-module-prepared')
+
 function showWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     if (!rendererBaseUrl) return
@@ -178,7 +184,7 @@ function showWindow() {
         ? new URL(pendingDeepLink.rendererPath, rendererBaseUrl).toString()
         : rendererBaseUrl
     pendingDeepLink = null
-    createWindow(rendererUrl, true)
+    createWindow(rendererUrl, true)()
     return
   }
   if (process.platform === 'darwin') {
@@ -299,9 +305,12 @@ async function warmRenderer(webUrl: string) {
   }
 }
 
-function createWindow(webUrl: string, showWhenReady?: boolean) {
+/**
+ * Opens the window, visible at once in the app's background colour unless Remember was started at login. The returned
+ * function starts loading the renderer; its callback runs once that first load has finished or failed.
+ */
+function createWindow(webUrl: string, show?: boolean) {
   const wasOpenedAtLogin = process.platform === 'darwin' && app.getLoginItemSettings().wasOpenedAtLogin
-  let shouldShowWhenReady = showWhenReady ?? !wasOpenedAtLogin
   const window = new BrowserWindow({
     width: 1220,
     height: 740,
@@ -336,13 +345,13 @@ function createWindow(webUrl: string, showWhenReady?: boolean) {
     },
   })
 
-  window.once('ready-to-show', () => {
-    if (shouldShowWhenReady && !isQuitting) window.show()
-  })
+  window.once('ready-to-show', () => markStartup('window-ready-to-show'))
+  window.once('show', () => markStartup('window-shown'))
+  if (show ?? !wasOpenedAtLogin) window.show()
+  observeStartupContent(window.webContents)
   window.on('close', (event) => {
     if (isQuitting) return
     event.preventDefault()
-    shouldShowWhenReady = false
     window.hide()
     if (process.platform === 'darwin' && !getSettings().edgeWidgetEnabled) app.hide()
   })
@@ -408,17 +417,30 @@ function createWindow(webUrl: string, showWhenReady?: boolean) {
     })
     recovery.recover(details.reason)
   })
-  void window
-    .loadFile(LOADING_HTML)
-    .then(() => warmRenderer(webUrl))
-    .then(async () => {
-      if (initialLoadInterrupted || isQuitting || mainWindow !== window || window.isDestroyed()) return
-      await window.loadURL(webUrl)
-      window.webContents.navigationHistory.clear()
-    })
-    .catch((error) => {
-      console.error('[renderer] initial load failed:', error)
-    })
+  async function enterRenderer() {
+    if (initialLoadInterrupted || isQuitting || mainWindow !== window || window.isDestroyed()) return
+    await window.loadURL(webUrl)
+    markStartup('renderer-loaded')
+    window.webContents.navigationHistory.clear()
+    void reportStartupTimeline(window.webContents)
+  }
+  return (onFirstLoadSettled?: () => void) => {
+    // The packaged export is on disk and loads at once. Only the development server can keep the window waiting, so
+    // only development shows the loading screen and sends a warm-up request.
+    const entered = app.isPackaged
+      ? enterRenderer()
+      : window
+          .loadFile(LOADING_HTML)
+          .then(() => warmRenderer(webUrl))
+          .then(enterRenderer)
+    void entered
+      .catch((error) => console.error('[renderer] initial load failed:', error))
+      .then(onFirstLoadSettled)
+      .catch((error) => {
+        console.error('[startup] Deferred launch work failed', error)
+        reportAppError(error, { area: 'startup', code: 'deferred-launch-work-failed' })
+      })
+  }
 }
 
 function registerActivateHandler() {
@@ -447,7 +469,7 @@ async function showStartupError(error: unknown) {
     await mainWindow.loadURL(startupErrorRendererUrl)
     showWindow()
   } else {
-    createWindow(startupErrorRendererUrl, true)
+    createWindow(startupErrorRendererUrl, true)()
   }
 
   try {
@@ -536,6 +558,7 @@ process.once('SIGTERM', shutdownFromTerminalSignal)
 
 async function startApplication() {
   if (!ownsRuntime) return
+  markStartup('app-ready')
   syncOfflineModeSentinel(getSettings().offlineMode)
   electronNetworkPolicy = installElectronNetworkPolicy({
     defaultSession: session.defaultSession,
@@ -574,9 +597,45 @@ async function startApplication() {
     )
     return file ? conversationAudioResponse(file, request) : new Response(null, { status: 404 })
   })
-  await ensureCliAccess()
+  const webUrl = app.isPackaged
+    ? await startPackagedWebServer()
+    : (process.env.REMEMBER_WEB_URL ?? 'http://localhost:3000')
+  markStartup('web-server-ready')
+  rendererBaseUrl = webUrl
+  const initialRendererUrl = pendingDeepLink
+    ? new URL(pendingDeepLink.rendererPath, webUrl).toString()
+    : app.isPackaged
+      ? new URL('/day/', webUrl).toString()
+      : webUrl
+  const openedFromDeepLink = pendingActivation || pendingDeepLink !== null
+  pendingActivation = false
+  pendingDeepLink = null
+  // The window opens first and gets one turn of the event loop to appear before the rest of launch occupies the
+  // main process. The renderer then starts alongside that work. Everything from `loadRenderer` to the end of this
+  // function must stay synchronous: the renderer's first calls are answered only once this function returns, and by
+  // then every handler and the day state they read must exist.
+  const loadRenderer = createWindow(initialRendererUrl, openedFromDeepLink ? true : undefined)
+  markStartup('window-created')
+  await delay(0)
+  loadRenderer(async () => {
+    // The loaded page still has to fetch its data and render; leave the main process free for that first.
+    await delay(1_000)
+    if (isQuitting) return
+    prewarmDictation()
+    disposeEdgeWidget ??= createEdgeWidget({
+      rendererUrl: webUrl,
+      openPath: (rendererPath) => {
+        pendingDeepLink = { kind: 'renderer', rendererPath }
+        showWindow()
+        openPendingDeepLinkInRenderer()
+      },
+    })
+    applyLaunchAtLoginSetting()
+    void ensureCliAccess()
+    recoverInterruptedAgentTrace(launchedAt)
+    markStartup('deferred-launch-work-done')
+  })
   applyInterfaceThemeSetting()
-  applyLaunchAtLoginSetting()
   nativeTheme.on('updated', syncWindowTheme)
   subscribeSettingsChanges(() => {
     const settings = getSettings()
@@ -585,11 +644,7 @@ async function startApplication() {
     }
   })
   registerDailyReviewIpc({ onModelPrepared: showWindow })
-  try {
-    await startWikiCliServer()
-  } catch (error) {
-    console.error('[wiki-cli] Failed to start local bridge', error)
-  }
+  void startWikiCliServer().catch((error) => console.error('[wiki-cli] Failed to start local bridge', error))
   registerAppIconIpc()
   registerPermissionGuideIpc({
     getRendererBaseUrl: () => rendererBaseUrl,
@@ -886,34 +941,19 @@ async function startApplication() {
   residentAgent = registerResidentAgent(agentInteractions, (event) =>
     Boolean(mainWindow && event.sender === mainWindow.webContents && event.senderFrame === event.sender.mainFrame)
   )
+  markStartup('ipc-registered')
   startDailyReview(() => mainWindow)
+  markStartup('daily-review-started')
   startDictation(() => mainWindow)
+  markStartup('dictation-started')
   startAgentLearning()
+  markStartup('agent-learning-started')
   registerRevinoteIntegration({ onImportedMeetingsChanged: refreshImportedRevinoteMeetings })
   void completePendingRevinoteOAuth()
-  const webUrl = app.isPackaged
-    ? await startPackagedWebServer()
-    : (process.env.REMEMBER_WEB_URL ?? 'http://localhost:3000')
-  rendererBaseUrl = webUrl
-  const initialRendererUrl = pendingDeepLink
-    ? new URL(pendingDeepLink.rendererPath, webUrl).toString()
-    : app.isPackaged
-      ? new URL('/day/', webUrl).toString()
-      : webUrl
-  const openedFromDeepLink = pendingActivation || pendingDeepLink !== null
-  pendingActivation = false
-  pendingDeepLink = null
-  createWindow(initialRendererUrl, openedFromDeepLink ? true : undefined)
   createTray({ showWindow, showSettings, showPauseDialog })
-  disposeEdgeWidget = createEdgeWidget({
-    rendererUrl: webUrl,
-    openPath: (rendererPath) => {
-      pendingDeepLink = { kind: 'renderer', rendererPath }
-      showWindow()
-      openPendingDeepLinkInRenderer()
-    },
-  })
+  markStartup('tray-created')
   registerActivateHandler()
+  markStartup('startup-complete')
 }
 
 app

@@ -243,14 +243,17 @@ export function createAgentTraceReader(path: string, limit = MAX_TRACE_EVENTS) {
 
 /** Rewrites a trace that has accumulated superseded lines down to its retained events. */
 export function compactAgentTraceAt(path: string, limit = MAX_TRACE_EVENTS) {
-  let contents = ''
+  let contents: Buffer
   try {
-    contents = readFileSync(path, 'utf8')
+    contents = readFileSync(path)
   } catch {
     return false
   }
-  const lines = contents.split('\n')
-  if (lines.length <= COMPACT_AFTER_LINES) return false
+  // Lines can be hundreds of kilobytes, so count them before paying to decode a trace that needs no compaction.
+  let lineCount = 1
+  for (let index = contents.indexOf(10); index !== -1; index = contents.indexOf(10, index + 1)) lineCount += 1
+  if (lineCount <= COMPACT_AFTER_LINES) return false
+  const lines = contents.toString('utf8').split('\n')
   const latestById = new Map<string, AgentTraceEvent>()
   mergeTraceLines(latestById, lines, true)
   const retained = latestTraceEvents(latestById, limit).reverse()
@@ -268,8 +271,49 @@ export function appendAgentTraceAt(path: string, event: AgentTraceEvent) {
   appendFileSync(path, `${JSON.stringify(event)}\n`, { encoding: 'utf8', mode: 0o600 })
 }
 
-export function recoverInterruptedAgentTraceAt(path: string, completedAt = Date.now()) {
-  const interrupted = readAgentTraceAt(path, MAX_TRACE_EVENTS).filter((event) => event.status === 'running')
+const RUNNING_STATUS = Buffer.from('"status":"running"')
+
+/**
+ * Finds the events whose latest line is still running. Lines can be hundreds of kilobytes, so this searches the raw
+ * bytes and decodes only lines that say running, plus later lines that mention such an event's id.
+ */
+function runningTraceEvents(path: string) {
+  let contents: Buffer
+  try {
+    contents = readFileSync(path)
+  } catch {
+    return []
+  }
+  const lineEnd = (offset: number) => {
+    const end = contents.indexOf(10, offset)
+    return end === -1 ? contents.length : end
+  }
+  const eventAt = (offset: number) => {
+    try {
+      const start = offset === 0 ? 0 : contents.lastIndexOf(10, offset - 1) + 1
+      return normalizeTraceEvent(JSON.parse(contents.toString('utf8', start, lineEnd(offset))))
+    } catch {
+      return null
+    }
+  }
+  const running = new Map<string, { event: AgentTraceEvent; end: number }>()
+  for (let at = contents.indexOf(RUNNING_STATUS); at !== -1; at = contents.indexOf(RUNNING_STATUS, lineEnd(at))) {
+    const event = eventAt(at)
+    if (event?.status === 'running') running.set(event.id, { event, end: lineEnd(at) })
+  }
+  return [...running.values()]
+    .filter(({ event, end }) => {
+      const id = Buffer.from(JSON.stringify(event.id))
+      for (let at = contents.indexOf(id, end); at !== -1; at = contents.indexOf(id, lineEnd(at))) {
+        if (eventAt(at)?.id === event.id) return false
+      }
+      return true
+    })
+    .map(({ event }) => event)
+}
+
+export function recoverInterruptedAgentTraceAt(path: string, completedAt = Date.now(), startedBefore = Infinity) {
+  const interrupted = runningTraceEvents(path).filter((event) => event.startedAt < startedBefore)
   for (const event of interrupted) {
     appendAgentTraceAt(path, {
       ...event,

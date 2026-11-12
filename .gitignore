@@ -12,6 +12,7 @@ release-local-test/
 release-personal/
 apps/desktop/release-candidate-signed/
 apps/desktop/release-controls/
+apps/desktop/release-bench/
 .release-source-maps/
 __pycache__/
 .DS_Store

@@ -46,6 +46,37 @@ describe('agent trace store', () => {
     assert.equal(recoverInterruptedAgentTraceAt(path, 300), 0)
   })
 
+  it('recovers only events still running from before this launch', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'remember-agent-trace-'))
+    const path = join(directory, 'trace.ndjson')
+    const running = {
+      action: 'agent-learning' as const,
+      provider: 'codex' as const,
+      status: 'running' as const,
+      completedAt: null,
+      dayId: null,
+      reason: null,
+      error: null,
+      logs: [],
+    }
+    appendAgentTraceAt(path, { ...running, id: 'finished', startedAt: 100 })
+    appendAgentTraceAt(path, { ...running, id: 'interrupted', startedAt: 110 })
+    // A finished event that merely mentions another id must not hide that event's running state.
+    appendAgentTraceAt(path, {
+      ...running,
+      id: 'finished',
+      startedAt: 100,
+      status: 'completed',
+      completedAt: 150,
+      logs: [{ timestamp: 150, message: 'Ran after "interrupted"' }],
+    })
+    appendAgentTraceAt(path, { ...running, id: 'this-launch', startedAt: 300 })
+
+    assert.equal(recoverInterruptedAgentTraceAt(path, 400, 200), 1)
+    const statuses = Object.fromEntries(readAgentTraceAt(path).map((event) => [event.id, event.status]))
+    assert.deepEqual(statuses, { finished: 'completed', interrupted: 'failed', 'this-launch': 'running' })
+  })
+
   it('keeps the latest snapshot for each event', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'remember-agent-trace-'))
     temporaryDirectories.push(directory)

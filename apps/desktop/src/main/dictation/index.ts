@@ -66,6 +66,11 @@ export function startDictation(getMainWindow: () => BrowserWindow | null) {
   service = createDictation(getMainWindow)
 }
 
+/** Creates the hidden recorder ahead of the first dictation. Launch calls this after the main window has loaded. */
+export function prewarmDictation() {
+  service?.prewarm()
+}
+
 export async function disposeDictation() {
   await service?.dispose()
   service = null
@@ -625,11 +630,13 @@ function createDictation(getMainWindow: () => BrowserWindow | null) {
   powerMonitor.on('suspend', onSuspend)
   void controlOutput('restore')
   applyShortcut()
-  recorder.prewarm()
-  prewarmSharedRecorder()
 
   return {
     state,
+    prewarm: () => {
+      recorder.prewarm()
+      prewarmSharedRecorder()
+    },
     completeNote,
     toggle,
     toggleVoiceNote: () => toggle(true),

@@ -27,10 +27,14 @@ export function recordAgentTrace(event: AgentTraceEvent) {
   }
 }
 
-export function recoverInterruptedAgentTrace() {
+/**
+ * Fails the events a previous run left running. Launch defers this past the first screen because the trace can be
+ * tens of megabytes, so events started by this run (at or after `launchedAt`) are left alone.
+ */
+export function recoverInterruptedAgentTrace(launchedAt: number) {
   try {
     compactAgentTraceAt(agentTracePath())
-    return recoverInterruptedAgentTraceAt(agentTracePath())
+    return recoverInterruptedAgentTraceAt(agentTracePath(), Date.now(), launchedAt)
   } catch (error) {
     console.warn('[agent-trace] could not recover interrupted events', error)
     return 0
