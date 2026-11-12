@@ -16,6 +16,8 @@ const ready = {
   userIdleSeconds: 600,
   lastMeaningfulSpeechAt: 0,
   now: 2_000_000,
+  lastRefreshAt: 0,
+  refreshIntervalMs: 600_000,
   latestEvidenceAt: 1_000_000,
   coveredThrough: 0,
   requiredIdleSeconds: 600,
@@ -38,6 +40,11 @@ describe('downtime Day refresh policy', () => {
   it('does not overlap another refresh or run outside active capture', () => {
     assert.equal(shouldRefreshDuringDowntime({ ...ready, isRefreshing: true }), false)
     assert.equal(shouldRefreshDuringDowntime({ ...ready, isRecording: false }), false)
+  })
+
+  it('waits for the refresh interval after an attempt that left coverage unchanged', () => {
+    assert.equal(shouldRefreshDuringDowntime({ ...ready, lastRefreshAt: ready.now - 599_999 }), false)
+    assert.equal(shouldRefreshDuringDowntime({ ...ready, lastRefreshAt: ready.now - 600_000 }), true)
   })
 })
 
@@ -126,6 +133,10 @@ describe('pending Day Wiki review retries', () => {
     moments: [],
     refresh: { status: 'idle' as const, run: { startedAt: 1_000, completedAt: 1_100 } },
   }
+  const failedDay = {
+    ...pendingDay,
+    refresh: { status: 'failed' as const, run: { startedAt: 1_200, completedAt: 1_300 } },
+  }
 
   it('recognizes explicitly incomplete Wiki coverage without new Day evidence', () => {
     assert.equal(hasPendingDayWikiReview(pendingDay.memory), true)
@@ -136,10 +147,10 @@ describe('pending Day Wiki review retries', () => {
   it('does not automatically backfill legacy Days or Days that have not been analyzed', () => {
     assert.equal(hasPendingDayWikiReview(null), false)
     assert.equal(hasPendingDayWikiReview({ coveredThrough: 1_000 }), false)
-    assert.equal(nextDayWithPendingWikiReview([{ ...pendingDay, memory: null }], 10_000, 600), null)
+    assert.equal(nextDayWithPendingWikiReview([{ ...failedDay, memory: null }], 10_000, 600), null)
     assert.equal(
       nextDayWithPendingWikiReview(
-        [{ ...pendingDay, memory: { coveredThrough: 1_000, refreshedAt: 1_100 } }],
+        [{ ...failedDay, memory: { coveredThrough: 1_000, refreshedAt: 1_100 } }],
         10_000,
         600
       ),
@@ -147,24 +158,31 @@ describe('pending Day Wiki review retries', () => {
     )
   })
 
-  it('retries both active and ended Days after the configured interval', () => {
+  it('never re-analyzes a Day whose completed refresh deferred the Wiki', () => {
     const endedDay = { ...pendingDay, id: 'ended-day', endedAt: 1_000 }
-    assert.equal(nextDayWithPendingWikiReview([pendingDay], 1_699, 600), null)
-    assert.equal(nextDayWithPendingWikiReview([pendingDay], 1_700, 600), pendingDay)
-    assert.equal(nextDayWithPendingWikiReview([endedDay], 1_700, 600), endedDay)
+    assert.equal(nextDayWithPendingWikiReview([pendingDay, endedDay], 1_700, 600), null)
+    assert.equal(nextDayWithPendingWikiReview([pendingDay, endedDay], 10_000_000, 600), null)
   })
 
-  it('waits after a long failed retry completes instead of retrying immediately', () => {
-    const failedDay = {
+  it('retries both active and ended Days after a failed attempt and the configured interval', () => {
+    const endedDay = { ...failedDay, id: 'ended-day', endedAt: 1_000 }
+    assert.equal(nextDayWithPendingWikiReview([failedDay], 1_899, 600), null)
+    assert.equal(nextDayWithPendingWikiReview([failedDay], 1_900, 600), failedDay)
+    assert.equal(nextDayWithPendingWikiReview([endedDay], 1_900, 600), endedDay)
+  })
+
+  it('doubles the wait for each failure since the last successful refresh', () => {
+    const failedAgain = {
       ...pendingDay,
       refresh: { status: 'failed' as const, run: { startedAt: 2_000, completedAt: 5_000 } },
     }
-    assert.equal(nextDayWithPendingWikiReview([failedDay], 5_599, 600), null)
-    assert.equal(nextDayWithPendingWikiReview([failedDay], 5_600, 600), failedDay)
+    assert.equal(nextDayWithPendingWikiReview([failedAgain], 5_600, 600), null)
+    assert.equal(nextDayWithPendingWikiReview([failedAgain], 8_899, 600), null)
+    assert.equal(nextDayWithPendingWikiReview([failedAgain], 8_900, 600), failedAgain)
   })
 
   it('stops scheduling retries once Wiki coverage catches up', () => {
-    const reviewedDay = { ...pendingDay, memory: { ...pendingDay.memory, wikiCoveredThrough: 1_000 } }
+    const reviewedDay = { ...failedDay, memory: { ...failedDay.memory, wikiCoveredThrough: 1_000 } }
     assert.equal(nextDayWithPendingWikiReview([reviewedDay], 10_000, 600), null)
   })
 
@@ -174,29 +192,28 @@ describe('pending Day Wiki review retries', () => {
       id: 'other-day',
       refresh: { status: 'refreshing' as const, run: { startedAt: 1_000, completedAt: null } },
     }
-    assert.equal(nextDayWithPendingWikiReview([pendingDay, refreshingDay], 10_000, 600), null)
+    assert.equal(nextDayWithPendingWikiReview([failedDay, refreshingDay], 10_000, 600), null)
   })
 
-  it('selects one oldest due attempt so a repeatedly deferred Day does not starve other Days', () => {
+  it('selects the oldest due attempt so one failing Day does not starve other Days', () => {
     const olderDay = {
-      ...pendingDay,
+      ...failedDay,
       id: 'older-day',
       endedAt: 500,
-      memory: { ...pendingDay.memory, refreshedAt: 800 },
-      refresh: { status: 'idle' as const, run: { startedAt: 500, completedAt: 800 } },
+      refresh: { status: 'failed' as const, run: { startedAt: 1_150, completedAt: 1_200 } },
     }
-    assert.equal(nextDayWithPendingWikiReview([pendingDay, olderDay], 1_700, 600), olderDay)
-    const retriedDay = { ...olderDay, refresh: { ...olderDay.refresh, run: { startedAt: 1_700, completedAt: 1_800 } } }
-    assert.equal(nextDayWithPendingWikiReview([retriedDay, pendingDay], 1_800, 600), pendingDay)
+    assert.equal(nextDayWithPendingWikiReview([failedDay, olderDay], 1_900, 600), olderDay)
+    const retriedDay = { ...olderDay, refresh: { ...olderDay.refresh, run: { startedAt: 1_900, completedAt: 1_950 } } }
+    assert.equal(nextDayWithPendingWikiReview([retriedDay, failedDay], 1_950, 600), failedDay)
   })
 
   it('waits for ended-Day transcription while allowing active-Day completed evidence to retry', () => {
     const transcribingDay = {
-      ...pendingDay,
+      ...failedDay,
       moments: [{ status: 'transcribing' as const }],
     }
     const endedDay = { ...transcribingDay, id: 'ended-day', endedAt: 1_000 }
-    assert.equal(nextDayWithPendingWikiReview([endedDay], 1_700, 600), null)
-    assert.equal(nextDayWithPendingWikiReview([endedDay, transcribingDay], 1_700, 600), transcribingDay)
+    assert.equal(nextDayWithPendingWikiReview([endedDay], 1_900, 600), null)
+    assert.equal(nextDayWithPendingWikiReview([endedDay, transcribingDay], 1_900, 600), transcribingDay)
   })
 })
