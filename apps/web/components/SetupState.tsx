@@ -11,6 +11,7 @@ import { agentSetupPresentation } from './agentSetupPresentation'
 import { Logo } from './Logo'
 import { modelSetupPresentation } from './modelSetupPresentation'
 import { SetupButton } from './SetupButton'
+import { SetupContextImport } from './SetupContextImport'
 import { SetupPrivacy } from './SetupPrivacy'
 
 type SetupStep = {
@@ -155,6 +156,16 @@ export function SetupState({
         settings.cloudAnalysisConsent,
       action: async () => undefined,
       actionLabel: t('Kies agent'),
+    },
+    {
+      id: 'context-import',
+      label: t('Neem je context mee'),
+      detail: t(
+        'Bouw een persoonlijke Wiki uit je bestaande Codex- en Claude-werk. De gesprekken zelf worden niet gekopieerd.'
+      ),
+      ready: settings.contextImportOnboardingCompleted,
+      action: async () => undefined,
+      actionLabel: t('Importeer context'),
     },
   ]
 
@@ -410,6 +421,8 @@ export function SetupState({
                   </SetupButton>
                 </div>
               </div>
+            ) : currentStep.id === 'context-import' ? (
+              <SetupContextImport bridge={bridge} onRefresh={onRefresh} />
             ) : currentStep.id === 'audio-capture' ? (
               <div className="mt-6 flex flex-wrap items-center gap-2">
                 <SetupButton

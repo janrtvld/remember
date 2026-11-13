@@ -44,8 +44,11 @@ function DashboardFrame({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (local.settings && !hasCompletedSetupChoices(local.settings)) setIntroductionPending(true)
   }, [local.settings])
+  // Only people onboarding now see the context import; earlier installs never get pulled back into setup for it.
+  const contextImportPending = introductionPending && local.settings?.contextImportOnboardingCompleted === false
   const introductionReady = Boolean(
     introductionPending &&
+      !contextImportPending &&
       local.settings &&
       local.state &&
       isSetupComplete({ settings: local.settings, state: local.state })
@@ -62,7 +65,7 @@ function DashboardFrame({ children }: { children: ReactNode }) {
   const setupStatus = local.state && local.settings ? { state: local.state, settings: local.settings } : null
   const canReadNotes =
     (pathname === '/notes' || pathname === '/notes/') && local.settings && hasCompletedSetupChoices(local.settings)
-  const setupIncomplete = setupStatus ? !isSetupComplete(setupStatus) && !canReadNotes : false
+  const setupIncomplete = setupStatus ? (!isSetupComplete(setupStatus) || contextImportPending) && !canReadNotes : false
   const setupMustGoOnline =
     setupIncomplete &&
     local.bootstrapLoadStatus === 'ready' &&

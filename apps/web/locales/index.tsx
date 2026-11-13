@@ -1201,6 +1201,7 @@ const english: Record<string, string> = {
   'Bouw een persoonlijke Wiki uit je bestaande Codex- en Claude-werk. De gesprekken zelf worden niet gekopieerd.':
     'Build a personal Wiki from your existing Codex and Claude work. The conversations themselves are not copied.',
   'Bouw mijn Wiki': 'Build my Wiki',
+  '1 Wiki-pagina bijgewerkt': '1 Wiki page updated',
   'Bestaande agentcontext kon niet worden gevonden. Je kunt deze stap overslaan.':
     'Existing agent context could not be found. You can skip this step.',
   'Je Wiki kon niet worden opgebouwd. Probeer het opnieuw of sla deze stap over.':

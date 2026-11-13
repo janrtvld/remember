@@ -3105,7 +3105,7 @@ export function createOnboardingPreviewBridge(baseBridge: RememberBridge): Remem
       settings = { ...(await getSettings()), ...patch }
       for (const listener of settingsListeners) listener(settings)
       persist()
-      if (hasCompletedOnboarding(settings)) {
+      if (hasCompletedOnboarding(settings) && settings.contextImportOnboardingCompleted) {
         window.setTimeout(() => window.location.replace('/'), 150)
       }
       return settings
