@@ -620,6 +620,8 @@ export async function generateContextWikiBootstrap(
     {
       executable,
       prompt: buildContextImportPrompt(documents, personalWikiPages, language, 'bootstrap'),
+      // Every source is already in the prompt; tool turns only add latency.
+      toolsDisabled: true,
       schema: CONTEXT_IMPORT_SCHEMA,
       systemPrompt: CONTEXT_IMPORT_SYSTEM_PROMPT,
       parseOutput: {

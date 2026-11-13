@@ -23,6 +23,7 @@ import type {
 } from '@remember/shared'
 import { defaultPersonalWikiSpaceName, PERSONAL_WIKI_SPACE_ID } from '@remember/shared'
 import { app } from 'electron'
+import { isContextImportRunning } from './contextImportStatus'
 import {
   applyManagedKnowledgeUpdatesAt,
   createKnowledgePageAt,
@@ -241,6 +242,7 @@ export function getWikiOverview(days: Day[]): WikiOverview {
     ),
     personalChanges: listPersonalWikiChanges(days),
     projectAssignments: readWikiProjectAssignments().filter((assignment) => visibleSpaceIds.has(assignment.spaceId)),
+    contextImportRunning: isContextImportRunning(),
   }
 }
 

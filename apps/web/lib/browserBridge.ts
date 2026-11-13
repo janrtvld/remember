@@ -41,6 +41,25 @@ const noop = () => undefined
 const resolved = () => Promise.resolve()
 const delay = (durationMs: number) => new Promise<void>((resolve) => setTimeout(resolve, durationMs))
 
+// Survives the onboarding preview's reload so the Wiki can show the background import.
+const PREVIEW_CONTEXT_IMPORT_KEY = 'remember:preview-context-import-until'
+const PREVIEW_CONTEXT_IMPORT_MS = 12_000
+function previewContextImportRemaining() {
+  try {
+    return Math.max(0, Number(window.sessionStorage.getItem(PREVIEW_CONTEXT_IMPORT_KEY)) - Date.now())
+  } catch {
+    return 0
+  }
+}
+async function runPreviewContextImport(onChange?: () => void) {
+  try {
+    window.sessionStorage.setItem(PREVIEW_CONTEXT_IMPORT_KEY, String(Date.now() + PREVIEW_CONTEXT_IMPORT_MS))
+  } catch {}
+  onChange?.()
+  await delay(PREVIEW_CONTEXT_IMPORT_MS)
+  onChange?.()
+}
+
 function startOfDay(dayOffset = 0) {
   const value = new Date()
   value.setHours(0, 0, 0, 0)
@@ -575,6 +594,7 @@ function defaultWikiOverview(): WikiOverview {
       },
     ],
     projectAssignments: [],
+    contextImportRunning: false,
   }
 }
 
@@ -1345,6 +1365,7 @@ export function createBrowserBridge(): RememberBridge {
   const emitMemoryChanged = () => {
     for (const listener of memoryListeners) listener()
   }
+  if (previewContextImportRemaining() > 0) window.setTimeout(emitMemoryChanged, previewContextImportRemaining() + 50)
   const emitUpdate = () => emit(updateListeners, update)
   const revinoteCanPostProcess = browserFixture.has('revinote-connected')
   const revinoteConnected = revinoteCanPostProcess || browserFixture.has('revinote-read-only')
@@ -2069,12 +2090,10 @@ export function createBrowserBridge(): RememberBridge {
         },
       ],
     }),
-    importAgentContext: async () => ({
-      providers: ['codex'],
-      sourceCount: 28,
-      createdPages: [],
-      updatedPages: ['projects/remember'],
-    }),
+    importAgentContext: async () => {
+      await runPreviewContextImport(emitMemoryChanged)
+      return { providers: ['codex'], sourceCount: 28, createdPages: [], updatedPages: ['projects/remember'] }
+    },
     getAgentLearningStatus: async () => ({
       status: !settings.agentLearningEnabled ? 'disabled' : settings.offlineMode ? 'offline' : 'watching',
       lastCheckedAt: settings.agentLearningEnabled ? Date.now() : null,
@@ -2507,7 +2526,7 @@ Beoordeel de taak met echte projectcontext en leg de uitgevoerde controles en ev
       emitDays()
       return days
     },
-    getWikiOverview: async () => wikiOverview,
+    getWikiOverview: async () => ({ ...wikiOverview, contextImportRunning: previewContextImportRemaining() > 0 }),
     createLocalWikiSpace: async (input) => {
       const id = crypto.randomUUID()
       wikiOverview = {
@@ -3135,7 +3154,7 @@ export function createOnboardingPreviewBridge(baseBridge: RememberBridge): Remem
             ],
     }),
     importAgentContext: async () => {
-      await delay(650)
+      await runPreviewContextImport()
       if (new URLSearchParams(window.location.search).get('onboarding-scenario') === 'import-error') {
         throw new Error('preview-context-import-failed')
       }

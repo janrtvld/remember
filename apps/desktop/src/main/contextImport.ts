@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import type { AgentTraceDiagnostic, ContextImportResult } from '@remember/shared'
-import { app } from 'electron'
+import { type AgentTraceDiagnostic, CHANNELS, type ContextImportResult } from '@remember/shared'
+import { app, BrowserWindow } from 'electron'
 import { recordAgentTrace } from './agentTraceRepository'
 import { contextSourceCheckpoints } from './contextImportChanges'
 import { discoverAgentContextAt } from './contextImportSources'
+import { setContextImportRunning } from './contextImportStatus'
 import { agentErrorText } from './dailyReview/agentErrors'
 import { generateContextWikiBootstrap } from './dailyReview/analyzer'
 import { applyManagedKnowledgeUpdates, listKnowledgePages } from './dailyReview/knowledgeStore'
@@ -20,10 +21,20 @@ export function getContextImportPreview() {
 export function importAgentContext() {
   requireNetworkAccess()
   if (activeImport) return activeImport
+  setContextImportRunning(true)
+  notifyWikiChanged()
   activeImport = runContextImport().finally(() => {
     activeImport = null
+    setContextImportRunning(false)
+    notifyWikiChanged()
   })
   return activeImport
+}
+
+function notifyWikiChanged() {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) window.webContents.send(CHANNELS.memoryChanged)
+  }
 }
 
 async function runContextImport(): Promise<ContextImportResult> {

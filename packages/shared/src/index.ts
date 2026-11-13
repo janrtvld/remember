@@ -1403,6 +1403,8 @@ export interface WikiOverview {
   suggestions: KnowledgeSuggestion[]
   personalChanges: WikiChangeLogEntry[]
   projectAssignments: WikiProjectAssignment[]
+  /** The onboarding import is still building the Personal Wiki from Codex and Claude context. */
+  contextImportRunning: boolean
 }
 
 export type WikiRevisionActor = 'user' | 'remember' | 'external' | 'system'

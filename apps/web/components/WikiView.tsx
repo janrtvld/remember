@@ -320,6 +320,7 @@ export function WikiView({ route }: { route: WikiRoute }) {
         {...options}
         space={activeSpace}
         pages={pages}
+        syncing={activeSpace.id === PERSONAL_WIKI_SPACE_ID && wikiOverview.contextImportRunning}
         settingsOpen={settingsOpen}
         onRemoveSpace={() => {
           setRemoveSpaceError(null)
@@ -576,9 +577,11 @@ function WikiBreadcrumb({
   creatingPage = false,
   creatingSubpage = false,
   deleting = false,
+  syncing = false,
 }: {
   space: WikiSpace
   pages: WikiPage[]
+  syncing?: boolean
   suggestions?: boolean
   category?: WikiCategory
   page?: WikiPage
@@ -688,6 +691,12 @@ function WikiBreadcrumb({
           </ol>
         </nav>
         <div className="flex shrink-0 items-center gap-1">
+          {syncing ? (
+            <span role="status" className="flex h-7 items-center gap-1.5 px-1.5 text-slate-500 text-xs">
+              <Spinner size="xs" />
+              {t('Wiki opbouwen…')}
+            </span>
+          ) : null}
           {space.id !== PERSONAL_WIKI_SPACE_ID ||
           onCreatePage ||
           onCreateSubpage ||
