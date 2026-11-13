@@ -130,7 +130,13 @@ export function createProactiveWorker(options: Options) {
     )
   }
 
+  /** The inexpensive check, where the owner offers one, for whether the conversation can take anything right now. */
+  function conversationCanReceive() {
+    return !options.attention || options.attention()?.available === true
+  }
+
   function canDeliver(decision: ProactiveDecision, policy: string) {
+    if (!conversationCanReceive()) return false
     const conversation = options.conversation()
     if (
       !conversation?.available ||
@@ -196,6 +202,9 @@ export function createProactiveWorker(options: Options) {
   async function run(policy: string) {
     options.beforeBatch?.()
     deliverPending(policy)
+    // Selecting a batch validates every candidate against its current sources. With nowhere to hand the batch, the
+    // next tick would select and validate the same candidates again, once a second for as long as that lasts.
+    if (!conversationCanReceive()) return
     const sources = validateSources(() => options.store.batch(now(), options.allowed, options.accept))
     if (!sources.length) return
     const conversation = options.conversation()

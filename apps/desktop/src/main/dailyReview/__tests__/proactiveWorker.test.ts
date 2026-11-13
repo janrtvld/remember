@@ -232,6 +232,30 @@ test('idle ticks do not reread private chat history after the source is acknowle
   await worker.stop()
 })
 
+test('ticks neither select a batch nor read private history while the conversation cannot receive', async () => {
+  const f = fixture()
+  let accepted = 0
+  let historyReads = 0
+  const worker = createProactiveWorker({
+    ...f.options,
+    accept: () => {
+      accepted++
+      return true
+    },
+    attention: () => ({ generation: f.conversation.generation, available: false }),
+    conversation: () => {
+      historyReads++
+      return f.options.conversation()
+    },
+  })
+  await worker.tick()
+  await worker.tick()
+  assert.equal(accepted, 0)
+  assert.equal(historyReads, 0)
+  assert.equal(f.calls.modelCalls, 0)
+  await worker.stop()
+})
+
 test('active interruption checks attention without repeatedly reading private history', async () => {
   const f = fixture()
   f.source.kind = 'day'
@@ -254,7 +278,8 @@ test('active interruption checks attention without repeatedly reading private hi
   assert.equal(historyReads, 1)
   f.conversation.available = false
   const interrupted = worker.tick()
-  assert.equal(attentionReads, 1)
+  // One read before the batch was selected, one for the interruption.
+  assert.equal(attentionReads, 2)
   assert.equal(historyReads, 1)
   await Promise.all([running, interrupted])
   assert.equal(f.calls.applyCalls, 0)
